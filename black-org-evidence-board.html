@@ -1638,6 +1638,153 @@ evidenceData.forEach((node) => {
   evidenceDetails[node.id] = emptyDetails();
 });
 
+// ── 已策展的詳細情報（使用者提供材料後整理、改寫，並附來源）────────
+// 寫法對應 renderDetailsPanel 支援的連結型態：
+//   relatedItems 每項可為純字串、節點 ID、或 { name, targetId }
+//   timeline   每條可選 targetId：內容後附可點的關聯 chip
+//   relationships 每條 { targetId, summary }
+// 無卡片者（如 Amanda Hughes）以純文字呈現，不建立連結。
+evidenceDetails.p1 = {
+  identity: "日本實力最為強大的頂級大富豪，黑衣組織的創立者與幕後最高支配者。官方記錄其於 50 年前死亡，實際存活至今。",
+  aliases: ["組織首領", "「那位大人」（Anokata）"],
+  affiliations: ["黑衣組織", "烏丸集團（Karasuma Group）"],
+  timeline: [
+    { label: "未知年份", content: "烏丸蓮耶誕生。" },
+    { label: "67 年前", content: "美國富豪 Amanda Hughes 在烏丸蓮耶的誕生派對上，與尚未獲得二把手稱號的朗姆遭遇。", targetId: "c1" },
+    { label: "超過 50 年前", content: "啟動黑衣組織的核心研究計畫，該計畫最終導致 APTX 4869 的研發。", targetId: "i1" },
+    { label: "50 年前", content: "官方記錄烏丸蓮耶死亡。" },
+    { label: "約 47 年前", content: "朗姆代表因身體狀況抱恙而缺席的烏丸蓮耶，出席國際經濟論壇的年會。", targetId: "c1" },
+    { label: "19 年前", content: "宮野夫婦同意關閉診所，加入由烏丸集團贊助的神秘研究設施。", targetId: "p6" },
+    { label: "當前時間線", content: "工藤優作向柯南與赤井秀一證實，17 年前羽田浩司命案的死前留言應解讀為「CARASUMA」，判定烏丸蓮耶是組織首領且至今依然活著。", targetId: "e2" }
+  ],
+  relationships: [
+    { targetId: "c1", summary: "其組織二把手，在數十年前便代表病重的烏丸蓮耶出席公開活動。" },
+    { targetId: "p6", summary: "19 年前接受烏丸集團贊助，為其開發核心藥物。" },
+    { targetId: "c4", summary: "深受首領寵愛的高級幹部，兩人關係極其特殊，苦艾酒似有不希望被組織知道身體變小（退化）的理由。" }
+  ],
+  relatedItems: [
+    { name: "APTX 4869 原始開發企劃", targetId: "i1" }
+  ],
+  confirmedFacts: [
+    "為黑衣組織的最高首領，擁有富可敵國的財力。",
+    "50 年前官方記錄死亡，但實際存活至今。"
+  ],
+  unconfirmed: [
+    "具體的存活方式是否與 APTX 4869 的藥效有關。",
+    "與苦艾酒之間不為人知的深層承諾（資料中僅提及苦艾酒隱瞞新一與志保縮小的真相，其與首領的具體爭議未完全揭露）。"
+  ],
+  sources: [
+    { site: "Detective Conan Wiki", title: "Timeline", url: "https://www.detectiveconanworld.com/wiki/Timeline" }
+  ]
+};
+
+evidenceDetails.i1 = {
+  identity: "由宮野厚司 & 艾蓮娜開啟研發、後由其小女兒宮野志保繼承開發的神秘藥物，研發起點可追溯至半個世紀前。",
+  aliases: ["宮野艾蓮娜生前將此藥物的前身計畫稱為「銀色子彈（Silver Bullet）」"],
+  affiliations: ["黑衣組織"],
+  timeline: [
+    { label: "超過 50 年前", content: "烏丸蓮耶啟動與此藥物相關的組織核心科學計畫。", targetId: "p1" },
+    { label: "17 年前", content: "羽田浩司命案中，天才棋手羽田浩司被組織強灌某版本的 APTX 4869 毒殺，其名字後被記錄在 APTX 受害者名單中。", targetId: "e2" },
+    { label: "5 年前", content: "年僅 13 歲的宮野志保在組織內以高智商科學家身分，主導並進行 APTX 4869 的開發工作。", targetId: "p5" },
+    { label: "當前時間線", content: "工藤新一在熱帶樂園被琴酒與伏特加灌下此藥，身體縮小至 6-7 歲，被迫化名江戶川柯南。", targetId: "p4" },
+    { label: "當前時間線", content: "宮野志保在姐姐宮野明美被殺後中斷研究，被囚禁時服下 APTX 4869 企圖自殺，卻意外身體縮小逃脫，化名灰原哀。", targetId: "p5" },
+    { label: "當前時間線", content: "灰原哀取得部分藥物資料，開發出臨時解毒劑，供柯南在倫敦與京都修學旅行期間短暫恢復為工藤新一。" },
+    { label: "當前時間線", content: "赤井瑪麗在倫敦 Vauxhall 橋被偽裝成赤井務武的苦艾酒強灌此藥，導致身體退化至中學生大小。", targetId: "c4" },
+    { label: "當前時間線", content: "組織二把手朗姆下令要求收集並調查 APTX 4869 在不同服用者身上產生不同效果（死亡或縮小）的具體條件。", targetId: "c1" }
+  ],
+  relationships: [
+    { targetId: "p6", summary: "此藥物原始項目「銀色子彈」的最初奠基者與研發者。" },
+    { targetId: "p5", summary: "繼承父母研究並將其開發為試作毒藥的科學家，後因吞服此藥縮小叛逃。" },
+    { targetId: "p4", summary: "受害者，被琴酒灌藥後縮小。" },
+    { targetId: "p11", summary: "17 年前被該藥物殺害的受害者。" },
+    { targetId: "c4", summary: "強行灌藥導致赤井瑪麗縮小的加害者，且出於未知原因隱瞞了工藤新一與宮野志保服用此藥後依然存活的秘密。" }
+  ],
+  relatedItems: [
+    "臨時解毒劑（Antidote）"
+  ],
+  confirmedFacts: [
+    "藥物在常規下可致人於無形死亡。",
+    "有極低機率會引發人體細胞退化縮小，且縮小後的個體仍保留原本的記憶與智商。"
+  ],
+  unconfirmed: [
+    "藥物研發的終極目標（「逆轉時間流逝」）。",
+    "宮野夫婦原版藥物與志保繼承後藥物在成分上的本質差異。"
+  ],
+  sources: [
+    { site: "Detective Conan Wiki", title: "Timeline", url: "https://www.detectiveconanworld.com/wiki/Timeline" }
+  ]
+};
+
+evidenceDetails.e2 = {
+  identity: "17 年前黑衣組織二把手朗姆犯下的重大謀殺案，也是赤井秀一加入 FBI、柯南、黑田兵衛、若狹留美與安室透各方勢力深入對抗組織的命運交織點。",
+  aliases: ["17 年前的真相事件（Case from 17 years ago）"],
+  affiliations: ["黑衣組織（策劃與執行方）"],
+  timeline: [
+    { label: "17 年前", content: "朗姆帶領組織成員企圖逼迫 Amanda Hughes 加入組織，Amanda 吞下藥物自殺。", targetId: "c1" },
+    { label: "17 年前", content: "羽田浩司在自己的房間保護了 Amanda 的保鏢若狹留美（Asaka），隨後被朗姆灌下 APTX 4869 毒殺，並在死前切碎鏡子留下「ASACA RUM」留言。", targetId: "p11" },
+    { label: "17 年前", content: "前來接頭的黑田兵衛發現遺體，在帶領 Asaka 開車逃亡時遭遇嚴重交通車禍昏迷 10 年。", targetId: "p3" },
+    { label: "17 年前", content: "赤井務武受羽田家委託調查後失蹤，其子赤井秀一因此立志加入 FBI 調查此案。", targetId: "p8" },
+    { label: "當前時間線", content: "柯南與灰原哀在網路上檢索羽田浩司命案，並將其與 APTX 受害者名單進行關聯調查。" },
+    { label: "當前時間線", content: "工藤優作推導出，命案現場的死前留言「ASACA RUM」實為「CARASUMA」之字母重組，鎖定烏丸蓮耶為組織首領。", targetId: "p1" },
+    { label: "當前時間線", content: "安室透在現代事件中意外撿到若狹留美掉落的將棋棋子「角行」，回憶起這曾是羽田浩司隨身攜帶、但在 17 年前命案現場神祕消失的遺物，因而開始全力戒備若狹留美。", targetId: "p9" },
+    { label: "當前時間線", content: "黑田兵衛在現代聯手柯南，重新還原 17 年前命案當天的完整細節，正式揭開若狹留美就是消失的 Asaka，並引發了組織對若狹留美的狙擊大戰。", targetId: "p3" }
+  ],
+  relationships: [
+    { targetId: "p11", summary: "被害者，遇害前將護身符棋子留給 Asaka。" },
+    { targetId: "c1", summary: "此命案的主導者與兇手。" },
+    { targetId: "p2", summary: "當年的失蹤保鏢 Asaka，目前隱姓埋名潛伏在帝丹小學，隨身攜帶浩司的角行棋子並誓死向組織報仇。" },
+    { targetId: "p3", summary: "當年的現場調查者與 Asaka 的救助者，因車禍導致右眼失明白髮，昏迷 10 年。" },
+    { targetId: "p8", summary: "因父親赤井務武調查此案失蹤而加入 FBI，誓要捉拿兇手朗姆。" },
+    { targetId: "p9", summary: "現代拾獲浩司遺物棋子的調查者，隨後被若狹留美襲擊並奪回棋子。" }
+  ],
+  relatedItems: [
+    { name: "角行將棋棋子", targetId: "i2" },
+    "死前留言（鏡子字母拼寫）"
+  ],
+  confirmedFacts: [
+    "羽田浩司是被組織藥物毒殺。",
+    "Amanda 的死因在外界記錄為未知，但實際是為保全 Asaka 而主動吞藥自盡。"
+  ],
+  unconfirmed: [
+    "黑田兵衛與 Asaka 發生車禍的確切真相。",
+    "若狹留美在 17 年間如何逃過組織追殺並取得教師執照的具體細節。"
+  ],
+  sources: [
+    { site: "Detective Conan Wiki", title: "Timeline", url: "https://www.detectiveconanworld.com/wiki/Timeline" }
+  ]
+};
+
+evidenceDetails.c3 = {
+  identity: "黑衣組織的高級幹部之一，主要擔任琴酒的副手、司機與前線聯絡人。",
+  aliases: ["ウォッカ（Wokka）"],
+  affiliations: ["黑衣組織"],
+  timeline: [
+    { label: "當前時間線（柯南篇起）", content: "在熱帶樂園與交易對象會面，並在琴酒襲擊工藤新一並強灌 APTX 4869 時在場協助。", targetId: "p4" },
+    { label: "當前時間線", content: "在新幹線上與琴酒執行交易計畫，差點用炸彈炸毀火車，被柯南阻止。" },
+    { label: "當前時間線", content: "在杯戶城市飯店協助琴酒搜捕雪莉，並差點殺死回歸原樣的雪莉。", targetId: "p5" },
+    { label: "當前時間線", content: "差點被柯南設局誘騙出關於板倉卓系統軟體交易的機密情報，因琴酒及時介入而免於暴露。" },
+    { label: "當前時間線", content: "在圍捕 FBI 搜查官卡邁爾的行動中，在車上透露出「朗姆改變了容貌，並為自己起了一個愚蠢假名潛伏」的最高機密，該對話被卡邁爾聽見並轉告給赤井秀一與柯南。", targetId: "c1" }
+  ],
+  relationships: [
+    { targetId: "c2", summary: "其直屬上司與行動搭檔。" },
+    { targetId: "p4", summary: "主要敵人，曾多次在暗中阻撓伏特加的交易與計畫。" },
+    { targetId: "p5", summary: "組織的叛逃者，伏特加多次協助琴酒進行搜捕。" }
+  ],
+  relatedItems: [
+    "常年配戴的墨鏡"
+  ],
+  confirmedFacts: [
+    "為琴酒的助手。",
+    "知道組織二把手朗姆的偽裝秘密（改變容貌與愚蠢假名）並無意中洩露。"
+  ],
+  unconfirmed: [
+    "伏特加在組織中的具體晉升背景及其他個人檔案。"
+  ],
+  sources: [
+    { site: "Detective Conan Wiki", title: "Timeline", url: "https://www.detectiveconanworld.com/wiki/Timeline" }
+  ]
+};
+
 function getDetails(nodeId) {
   const stored = evidenceDetails[nodeId];
   if (!stored) return emptyDetails();
