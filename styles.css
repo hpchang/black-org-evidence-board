@@ -379,10 +379,10 @@ button:focus-visible,
   position: absolute;
   z-index: 3;
   display: grid;
-  grid-template-rows: auto 1fr auto;
-  gap: 9px;
+  grid-template-rows: auto 68px minmax(38px, 1fr) auto;
+  gap: 8px;
   width: 166px;
-  min-height: 112px;
+  min-height: 190px;
   padding: 14px 13px 11px;
   border: 0;
   border-top: 5px solid var(--type-color);
@@ -511,6 +511,36 @@ button:focus-visible,
   font-variant-numeric: tabular-nums;
 }
 
+.card-art {
+  position: relative;
+  margin: 0;
+  border: 1px solid rgba(37, 34, 30, 0.28);
+  background: #1b1c21;
+  box-shadow: inset 3px 0 var(--type-color);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.card-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 55%, rgba(0, 0, 0, 0.28));
+}
+
+.card-art svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: scale(1.08);
+  transition: transform 180ms ease;
+}
+
+.node-card:hover .card-art svg,
+.node-card.active-card .card-art svg {
+  transform: scale(1.13);
+}
+
 .card-title {
   align-self: center;
   margin: 0;
@@ -551,10 +581,10 @@ button:focus-visible,
   left: 16px;
   z-index: 12;
   display: flex;
-  align-items: end;
+  align-items: center;
   justify-content: space-between;
-  gap: 22px;
-  width: min(480px, calc(100vw - var(--sidebar-width) - 32px));
+  gap: 18px;
+  width: min(620px, calc(100vw - var(--sidebar-width) - 32px));
   min-width: 300px;
   margin: -86px 0 16px 16px;
   padding: 12px 14px;
@@ -565,8 +595,27 @@ button:focus-visible,
   pointer-events: none;
 }
 
-.board-hud > div {
+.hud-readouts {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+}
+
+.hud-metric {
   white-space: nowrap;
+}
+
+.hud-metric[hidden] {
+  display: none;
+}
+
+.hud-metric + .hud-metric {
+  padding-left: 14px;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.hud-metric .hud-label {
+  display: block;
 }
 
 .board-hud strong {
@@ -577,6 +626,13 @@ button:focus-visible,
   font-size: 1.5rem;
   font-weight: 900;
   line-height: 1;
+}
+
+.archive-access strong {
+  color: #f2d3d5;
+  font-family: var(--font-mono);
+  font-size: 1.2rem;
+  letter-spacing: 0.04em;
 }
 
 .hud-unit,
@@ -800,6 +856,33 @@ button:focus-visible,
   color: #d0cec8;
   font-size: 0.88rem;
   line-height: 1.82;
+}
+
+/* ── 卡片插畫（側欄頂部大圖）─────────────────────────────────── */
+.detail-art {
+  position: relative;
+  margin: 0;
+  border: 1px solid #32343a;
+  background: #1b1c21;
+  aspect-ratio: 6 / 5;
+  overflow: hidden;
+}
+
+.detail-art::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  left: -1px;
+  z-index: 2;
+  width: 3px;
+  background: var(--detail-color);
+}
+
+.detail-art svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .relations-section {
@@ -1266,6 +1349,10 @@ button:focus-visible,
     grid-column: 1;
   }
 
+  .detail-art {
+    grid-column: 1;
+  }
+
   .detail-desc-block {
     grid-column: 1;
   }
@@ -1276,7 +1363,7 @@ button:focus-visible,
 
   .relations-section {
     grid-column: 2;
-    grid-row: 1 / 4;
+    grid-row: 1 / -1;
   }
 
   .sidebar-footer {
@@ -1285,6 +1372,10 @@ button:focus-visible,
 
   .board-hud {
     width: min(440px, calc(100vw - 32px));
+  }
+
+  .board-hud p {
+    display: none;
   }
 }
 
@@ -1329,8 +1420,12 @@ button:focus-visible,
     min-width: 0;
   }
 
-  .board-hud p {
-    display: none;
+  .hud-readouts {
+    gap: 10px;
+  }
+
+  .hud-metric + .hud-metric {
+    padding-left: 10px;
   }
 
   .detail-card {
@@ -1340,6 +1435,7 @@ button:focus-visible,
 
   .detail-classification,
   .detail-name,
+  .detail-art,
   .detail-desc-block,
   .details-disclosure,
   .relations-section {

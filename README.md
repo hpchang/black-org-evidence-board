@@ -2,6 +2,12 @@
 
 《名偵探柯南》黑衣組織關係資料的離線互動網頁。支援卡片拖曳、紅線即時連動、節點展開／收合、分類篩選、鍵盤操作與行動裝置觸控。
 
+## 正式部署
+
+- 網址：<https://www.hpchang.com/black-org-evidence-board/>
+- Open Graph 圖：`assets/og/black-org-evidence-board-og.png`（1200×630）
+- Supabase 計數 slug：`black-org-evidence-board`
+
 ## 本地使用
 
 四個核心檔案位於同一資料夾：
@@ -11,7 +17,7 @@
 - `script.js`
 - `data.json`
 
-直接雙擊 `index.html` 即可使用。資料已內嵌於 `script.js`，因此不需要啟動本機伺服器，也不會遇到 `file://` 讀取 JSON 的 CORS 限制。
+直接雙擊 `index.html` 即可使用。資料已內嵌於 `script.js`，因此不需要啟動本機伺服器，也不會遇到 `file://` 讀取 JSON 的 CORS 限制。瀏覽計數器是線上增強功能；無網路、Supabase 未設定或請求逾時時會靜默隱藏，不影響證據板離線操作。
 
 ## 資料檔
 
@@ -43,7 +49,29 @@ evidenceData = await response.json();
 
 ## 單檔版本
 
-`black-org-evidence-board.html` 是將 CSS 與 JavaScript 全部內嵌的單檔發布版本，適合直接傳送或嵌入無外部資源的環境。
+`black-org-evidence-board.html` 是將 CSS 與 JavaScript 全部內嵌的單檔發布版本，適合直接傳送或嵌入無外部程式資源的環境。它與 `index.html` 使用相同的線上計數器；離線開啟時請求失敗會被忽略。
+
+來源檔更新後，用標準函式庫生成器重建：
+
+```bash
+python3 tools/build_standalone.py
+```
+
+生成器會內嵌目前的 `styles.css`、`script.js` 與 SVG favicon；請勿在單檔版做獨立修改。
+
+## 社群分享圖與素材授權
+
+- 最終圖：`assets/og/black-org-evidence-board-og.png`
+- 可重建設計：`swift tools/generate_og.swift`
+- 原始軟木板照片與 CC BY 4.0 標示：[`assets/og/CREDITS.md`](assets/og/CREDITS.md)
+
+社群 metadata 使用正式站上的絕對 HTTPS 圖片網址，避免分享爬蟲無法解析相對路徑。
+
+## Supabase 瀏覽計數器
+
+證據板 HUD 會在取得有效數字後顯示 `ARCHIVE ACCESS`。同一瀏覽階段第一次載入呼叫 `bump_hits`，重新整理則呼叫 `read_hits`，避免同一個分頁階段重複累加；請求 8 秒逾時或失敗時不顯示。
+
+資料庫 migration 與安全模型說明位於 [`supabase/`](supabase/README.md)。正式部署前需在共享 Supabase 專案套用 `supabase/counter.sql`，把 `black-org-evidence-board` 加入資料列與 RPC 白名單。
 
 ## 第二層詳細情報
 
@@ -92,18 +120,16 @@ evidenceData = await response.json();
 
 是否加入由使用者確認；加入時應盡量雙向，並同步三份資料。
 
-### 三、卡片插畫素材（尚未決定）
+### 三、卡片插畫素材（已採用內嵌 SVG）
 
-兩個方案：
+目前 19 筆線索均已配置自行繪製的原創 Noir 漫畫線稿：
 
-- **方案一**：採 CC0 或 Creative Commons BY‑SA 授權素材（Pixabay、Unsplash、OpenClipart），下載後裁切、調色、標註來源與授權。
-- **方案二**：自行繪製統一風格的日式漫畫插圖（簡潔線條、平塗色塊、黑白／單色調），匯出 PNG/SVG。
+- 人物以髮型、輪廓與案件象徵物建立辨識度，不直接重製動畫／漫畫官方圖像。
+- 組織代號、事件與物品使用酒器、實驗器材、案件現場與關鍵物證等符號構圖。
+- 同一份 `cardArt` SVG 同時用於證據板卡片縮圖與側欄大型插圖，避免維護兩套資產。
+- 插圖直接內嵌於 `script.js`，不加入資料 JSON，也不依賴外部圖片或字型；Supabase 計數器即使連線失敗，`file://` 核心功能仍可完整離線運作。
 
-關鍵考量：
-
-- 現有 `styles.css` 是固定 1800×1240 證據畫布的 Noir 黑紅偵探風格，插畫需配合此視覺系統，不能破壞一致性。
-- 專案強調完全離線、無外部資源依賴——圖檔最終都應內嵌或隨專案附帶，不應執行時從外部載入（會破壞 `file://` 離線）。
-- 此議題與資料填寫為兩條獨立線，可分別推進。
+插圖統一採用 240×200 畫布、淺米色主線與深色背景，配合固定 1800×1240 證據畫布的 Noir 黑紅視覺系統。修改插圖後需重新產生 `black-org-evidence-board.html`。
 
 ### 四、驗證方式
 
@@ -111,6 +137,8 @@ evidenceData = await response.json();
 
 ```bash
 node --check script.js
+swift tools/generate_og.swift
+python3 tools/build_standalone.py
 python3 - <<'PY'
 import json
 from pathlib import Path
@@ -124,4 +152,4 @@ for fn in ["data.json", "black-org-evidence-data.json"]:
 PY
 ```
 
-並重新產生 `black-org-evidence-board.html`（內嵌 `styles.css` + `script.js`），再以本地 HTTP 確認各檔回傳 200。
+再以本地 HTTP 確認頁面與 `assets/og/black-org-evidence-board-og.png` 回傳 200，並檢查正式頁的 canonical、Open Graph、Twitter metadata 與 Supabase 計數器。直接以 `file://` 開啟來源版及單檔版時，也須確認拖曳、篩選、卷宗導航與重設功能不受網路失敗影響。

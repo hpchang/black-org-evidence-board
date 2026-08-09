@@ -27,6 +27,18 @@ Check JavaScript syntax:
 node --check script.js
 ```
 
+Regenerate the self-contained distribution after changing `index.html`, `styles.css`, `script.js`, or the favicon:
+
+```bash
+python3 tools/build_standalone.py
+```
+
+Regenerate the 1200×630 Open Graph image after changing its design or source photograph:
+
+```bash
+swift tools/generate_og.swift
+```
+
 Validate the standalone JSON data and connection targets:
 
 ```bash
@@ -51,7 +63,9 @@ There is no single-test command or test suite. For a targeted regression check, 
 - `styles.css` owns the entire noir visual system, fixed 1800×1240 evidence canvas, card/category treatments, SVG thread states, sidebar, accessibility states, and responsive layouts at 1120px, 880px, and 620px.
 - `script.js` contains both the embedded evidence database and all application behavior. Keeping data embedded is intentional: fetching `data.json` would break direct `file://` use because of browser CORS restrictions.
 - `data.json` is the standalone/API copy of the evidence records. `black-org-evidence-data.json` is the same data under its deployment filename.
-- `black-org-evidence-board.html` is a generated, self-contained distribution file with `styles.css` and `script.js` inlined. Treat the split source files as authoritative; do not make standalone-only edits.
+- `black-org-evidence-board.html` is a generated, self-contained distribution file with `styles.css`, `script.js`, and the favicon inlined. Treat the split source files as authoritative; do not make standalone-only edits. Regenerate it with `python3 tools/build_standalone.py`.
+- `assets/og/` stores the Wikimedia-derived 1200×630 social image, its retained source, and attribution. Rebuild it with `swift tools/generate_og.swift`; keep the metadata image URL absolute.
+- `supabase/counter.sql` provisions the fail-silent `ARCHIVE ACCESS` counter. The browser publishable key is public by design; database safety depends on RLS, fixed RPC permissions, and the slug allowlist.
 
 ## State and rendering model
 
@@ -78,4 +92,4 @@ Each evidence record has exactly these conceptual fields:
 
 When evidence changes, keep the embedded `evidenceData` in `script.js`, `data.json`, and `black-org-evidence-data.json` synchronized. Connections should normally be reciprocal even though rendering tolerates one-sided links. Update the hard-coded total shown in `index.html` if the record count changes.
 
-After modifying `index.html`, `styles.css`, or `script.js`, regenerate `black-org-evidence-board.html` by inlining the current source files rather than editing the generated file independently.
+After modifying `index.html`, `styles.css`, `script.js`, or the favicon, run `python3 tools/build_standalone.py` rather than editing the generated file independently.
