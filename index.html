@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#101114">
+  <meta name="description" content="《名偵探柯南》黑衣組織互動式證據板：拖曳線索、展開關聯並查閱機密卷宗。">
+  <title>黑衣組織機密情報證據板</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <header class="control-header">
+      <div class="brand-lockup" aria-label="黑衣組織機密情報證據板">
+        <span class="brand-kicker">警察廳・極秘搜查資料</span>
+        <div class="brand-row">
+          <h1>BLACK ORGANIZATION</h1>
+          <span class="case-number">CASE / 4869</span>
+        </div>
+      </div>
+
+      <div class="toolbar" aria-label="證據板控制列">
+        <div class="filter-group" role="group" aria-label="分類篩選">
+          <button class="filter-btn active" type="button" data-filter="all" aria-pressed="true">全部</button>
+          <button class="filter-btn" type="button" data-filter="person" aria-pressed="false">人物</button>
+          <button class="filter-btn" type="button" data-filter="code" aria-pressed="false">代號</button>
+          <button class="filter-btn" type="button" data-filter="event" aria-pressed="false">事件</button>
+          <button class="filter-btn" type="button" data-filter="item" aria-pressed="false">物品</button>
+        </div>
+        <button id="reset-layout-btn" class="util-btn" type="button">
+          <span aria-hidden="true">↺</span> 重置佈局
+        </button>
+      </div>
+    </header>
+
+    <main class="board-wrapper" id="board-wrapper" aria-label="互動式證據板">
+      <div id="pinboard" class="pinboard">
+        <svg id="connections-svg" aria-hidden="true"></svg>
+        <div class="board-stamp" aria-hidden="true">
+          <span>TOP SECRET</span>
+          <small>AUTHORIZED EYES ONLY</small>
+        </div>
+        <div class="board-coordinate board-coordinate-x" aria-hidden="true">A&nbsp;&nbsp;&nbsp;B&nbsp;&nbsp;&nbsp;C&nbsp;&nbsp;&nbsp;D&nbsp;&nbsp;&nbsp;E&nbsp;&nbsp;&nbsp;F</div>
+        <div class="board-coordinate board-coordinate-y" aria-hidden="true">01&nbsp;&nbsp;&nbsp;02&nbsp;&nbsp;&nbsp;03&nbsp;&nbsp;&nbsp;04</div>
+      </div>
+
+      <div class="board-hud" aria-live="polite">
+        <div>
+          <span class="hud-label">目前視野</span>
+          <strong id="visible-count">5</strong><span class="hud-unit"> / 19 線索</span>
+        </div>
+        <p>拖曳卡片移動 · 點擊展開或收合關聯</p>
+      </div>
+    </main>
+
+    <aside id="case-file-sidebar" class="sidebar" aria-label="偵探卷宗側欄">
+      <div class="sidebar-header">
+        <div>
+          <span class="sidebar-eyebrow">DETECTIVE CASE FILE</span>
+          <h2>關聯情報卷宗</h2>
+        </div>
+        <span class="security-level">機密</span>
+      </div>
+
+      <div id="sidebar-content" class="sidebar-content">
+        <div class="empty-state">
+          <div class="empty-crosshair" aria-hidden="true"></div>
+          <p class="empty-title">尚未選取線索</p>
+          <p>點擊證據板上的任意卡片，解鎖其深層關係與機密檔案。</p>
+        </div>
+      </div>
+
+      <footer class="sidebar-footer">
+        <span>CONFIDENTIAL-4869</span>
+        <span id="record-clock">SYS / OFFLINE</span>
+      </footer>
+    </aside>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,2448 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#101114">
+  <meta name="description" content="《名偵探柯南》黑衣組織互動式證據板：拖曳線索、展開關聯並查閱機密卷宗。">
+  <title>黑衣組織機密情報證據板</title>
+  <style>
+/*
+ * BLACK ORGANIZATION // EVIDENCE BOARD
+ * Offline-first noir interface. No external fonts or assets required.
+ */
+
+:root {
+  color-scheme: dark;
+  --ink-black: #101114;
+  --ink-deep: #090a0c;
+  --panel-black: #151619;
+  --cork-char: #23201f;
+  --cork-edge: #171514;
+  --paper: #ded4be;
+  --paper-light: #eee6d5;
+  --paper-ink: #25221e;
+  --fog: #bcb8ae;
+  --muted: #7c7973;
+  --rule: #32343a;
+  --signal-red: #c4161c;
+  --signal-red-hot: #ef343b;
+  --type-person: #3987e5;
+  --type-code: #e66767;
+  --type-event: #c98500;
+  --type-item: #199e70;
+  --header-height: 78px;
+  --sidebar-width: 360px;
+  --shadow-deep: 0 20px 60px rgba(0, 0, 0, 0.45);
+  --font-display: "Arial Narrow", "DIN Condensed", "Avenir Next Condensed", sans-serif;
+  --font-body: "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  background: var(--ink-black);
+  color: #f5f2eb;
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button:focus-visible,
+.node-card:focus-visible,
+.relation-item:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 3px;
+}
+
+#app {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--sidebar-width);
+  grid-template-rows: var(--header-height) minmax(0, 1fr);
+  width: 100%;
+  height: 100dvh;
+  background: var(--ink-black);
+}
+
+/* ── Command header ─────────────────────────────────────────────── */
+.control-header {
+  position: relative;
+  z-index: 20;
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-width: 0;
+  padding: 0 18px 0 22px;
+  background:
+    linear-gradient(90deg, rgba(196, 22, 28, 0.12), transparent 28%),
+    var(--ink-deep);
+  border-bottom: 1px solid var(--rule);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.32);
+}
+
+.control-header::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -2px;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--signal-red), transparent 36%);
+  opacity: 0.8;
+}
+
+.brand-lockup {
+  display: grid;
+  gap: 3px;
+  min-width: 310px;
+}
+
+.brand-kicker,
+.sidebar-eyebrow,
+.hud-label {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.63rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.brand-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.brand-row h1 {
+  margin: 0;
+  color: #f8f5ef;
+  font-family: var(--font-display);
+  font-size: clamp(1.05rem, 1.8vw, 1.55rem);
+  font-stretch: condensed;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  text-wrap: balance;
+}
+
+.case-number {
+  color: var(--signal-red-hot);
+  font-family: var(--font-mono);
+  font-size: 0.67rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.toolbar,
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.toolbar {
+  min-width: 0;
+}
+
+.filter-group {
+  padding: 4px;
+  border: 1px solid #292b31;
+  background: #111216;
+}
+
+.filter-btn,
+.util-btn {
+  min-height: 34px;
+  border: 1px solid transparent;
+  border-radius: 0;
+  color: #9f9d97;
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  transition: color 160ms ease, background 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.filter-btn {
+  padding: 0 12px;
+}
+
+.util-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 13px;
+  border-color: #35373d;
+  background: #191a1f;
+}
+
+.filter-btn:hover,
+.util-btn:hover {
+  color: #ffffff;
+  border-color: #5a5d66;
+  background: #25262c;
+}
+
+.filter-btn.active {
+  color: #ffffff;
+  border-color: var(--signal-red);
+  background: var(--signal-red);
+  box-shadow: 0 0 18px rgba(196, 22, 28, 0.28);
+}
+
+.util-btn:active,
+.filter-btn:active {
+  transform: translateY(1px);
+}
+
+/* ── Board ──────────────────────────────────────────────────────── */
+.board-wrapper {
+  position: relative;
+  grid-column: 1;
+  grid-row: 2;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  background: var(--cork-edge);
+  scrollbar-color: #4c4743 #151515;
+  scrollbar-width: thin;
+}
+
+.board-wrapper::-webkit-scrollbar,
+.sidebar-content::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.board-wrapper::-webkit-scrollbar-track,
+.sidebar-content::-webkit-scrollbar-track {
+  background: #151515;
+}
+
+.board-wrapper::-webkit-scrollbar-thumb,
+.sidebar-content::-webkit-scrollbar-thumb {
+  border: 2px solid #151515;
+  background: #4c4743;
+}
+
+.pinboard {
+  position: relative;
+  width: 1800px;
+  height: 1240px;
+  isolation: isolate;
+  overflow: hidden;
+  background-color: var(--cork-char);
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    radial-gradient(circle at 20% 30%, rgba(107, 72, 57, 0.16), transparent 24%),
+    radial-gradient(circle at 78% 65%, rgba(0, 0, 0, 0.24), transparent 32%);
+  background-size: 36px 36px, 36px 36px, auto, auto;
+  box-shadow: inset 0 0 110px rgba(0, 0, 0, 0.62);
+}
+
+.pinboard::before {
+  content: "";
+  position: absolute;
+  inset: 17px;
+  z-index: 0;
+  pointer-events: none;
+  border: 1px solid rgba(222, 212, 190, 0.08);
+}
+
+.pinboard::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.22;
+  background-image: repeating-radial-gradient(circle at 10% 20%, transparent 0 4px, rgba(255, 255, 255, 0.03) 5px 6px);
+  background-size: 70px 56px;
+  mix-blend-mode: overlay;
+}
+
+.board-coordinate {
+  position: absolute;
+  z-index: 0;
+  color: rgba(222, 212, 190, 0.16);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.26em;
+  pointer-events: none;
+}
+
+.board-coordinate-x {
+  top: 26px;
+  left: 50px;
+}
+
+.board-coordinate-y {
+  top: 78px;
+  left: 26px;
+  width: 10px;
+  line-height: 14rem;
+  word-break: break-all;
+}
+
+.board-stamp {
+  position: absolute;
+  right: 110px;
+  bottom: 100px;
+  z-index: 0;
+  display: grid;
+  gap: 4px;
+  width: 210px;
+  padding: 12px 16px;
+  border: 4px double rgba(196, 22, 28, 0.28);
+  color: rgba(196, 22, 28, 0.28);
+  font-family: var(--font-mono);
+  text-align: center;
+  transform: rotate(-8deg);
+  pointer-events: none;
+}
+
+.board-stamp span {
+  font-size: 1.35rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
+.board-stamp small {
+  font-size: 0.58rem;
+  letter-spacing: 0.09em;
+}
+
+#connections-svg {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.connection-shadow {
+  fill: none;
+  stroke: rgba(0, 0, 0, 0.7);
+  stroke-width: 6px;
+  stroke-linecap: round;
+  opacity: 0.65;
+}
+
+.connection-line {
+  fill: none;
+  stroke: var(--signal-red);
+  stroke-width: 2.5px;
+  stroke-linecap: round;
+  opacity: 0.68;
+  transition: opacity 180ms ease, stroke-width 180ms ease, filter 180ms ease;
+  filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.65));
+}
+
+.connection-knot {
+  fill: var(--signal-red-hot);
+  opacity: 0.8;
+}
+
+.connection-line.active-connection {
+  stroke: var(--signal-red-hot);
+  stroke-width: 4px;
+  opacity: 1;
+  filter: drop-shadow(0 0 5px rgba(239, 52, 59, 0.48));
+}
+
+.connection-line.dimmed-connection,
+.connection-shadow.dimmed-connection,
+.connection-knot.dimmed-connection {
+  opacity: 0.08;
+}
+
+/* ── Evidence cards ─────────────────────────────────────────────── */
+.node-card {
+  --type-color: var(--type-person);
+  position: absolute;
+  z-index: 3;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 9px;
+  width: 166px;
+  min-height: 112px;
+  padding: 14px 13px 11px;
+  border: 0;
+  border-top: 5px solid var(--type-color);
+  border-radius: 1px;
+  color: var(--paper-ink);
+  background:
+    linear-gradient(135deg, transparent 0 9px, rgba(255, 255, 255, 0.18) 10px 11px, transparent 12px),
+    var(--paper);
+  box-shadow: 3px 8px 18px rgba(0, 0, 0, 0.52), 0 0 0 1px rgba(255, 255, 255, 0.13);
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  transform: rotate(var(--card-rotation, 0deg));
+  transform-origin: 50% 12px;
+  transition: opacity 180ms ease, box-shadow 180ms ease, transform 180ms ease, filter 180ms ease;
+}
+
+.node-card[data-type="person"] {
+  --type-color: var(--type-person);
+}
+
+.node-card[data-type="code"] {
+  --type-color: var(--type-code);
+  background:
+    linear-gradient(145deg, rgba(25, 18, 18, 0.04), transparent 45%),
+    var(--paper-light);
+}
+
+.node-card[data-type="event"] {
+  --type-color: var(--type-event);
+  background:
+    linear-gradient(0deg, rgba(201, 133, 0, 0.07), rgba(201, 133, 0, 0.07)),
+    var(--paper);
+}
+
+.node-card[data-type="item"] {
+  --type-color: var(--type-item);
+  background:
+    repeating-linear-gradient(0deg, transparent 0 21px, rgba(37, 34, 30, 0.055) 22px),
+    var(--paper-light);
+}
+
+.node-card::before {
+  content: "";
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  z-index: 5;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 34% 29%, #ff9b9f 0 10%, transparent 12%),
+    radial-gradient(circle at 42% 38%, #e5373d, #801014 72%);
+  box-shadow: 0 5px 6px rgba(0, 0, 0, 0.56), inset -2px -3px 4px rgba(0, 0, 0, 0.35);
+  transform: translateX(-50%);
+}
+
+.node-card::after {
+  content: "";
+  position: absolute;
+  right: 7px;
+  bottom: 7px;
+  left: 7px;
+  height: 1px;
+  background: rgba(37, 34, 30, 0.15);
+}
+
+.node-card:hover {
+  z-index: 5;
+  box-shadow: 5px 14px 28px rgba(0, 0, 0, 0.62), 0 0 0 1px rgba(255, 255, 255, 0.2);
+  transform: rotate(0deg) translateY(-3px);
+}
+
+.node-card.dragging {
+  z-index: 10;
+  cursor: grabbing;
+  box-shadow: 8px 18px 34px rgba(0, 0, 0, 0.72);
+  transform: rotate(1.5deg) scale(1.025);
+  transition: none;
+}
+
+.node-card.active-card {
+  z-index: 7;
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 6px rgba(196, 22, 28, 0.75), 8px 18px 36px rgba(0, 0, 0, 0.68);
+  transform: rotate(0deg) scale(1.035);
+}
+
+.node-card.related-card {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--type-color), white 12%), 4px 10px 24px rgba(0, 0, 0, 0.58);
+}
+
+.node-card.dimmed-card {
+  opacity: 0.24;
+  filter: grayscale(0.5);
+}
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #6d665b;
+  font-family: var(--font-mono);
+  font-size: 0.59rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.card-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.card-type::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border: 2px solid var(--type-color);
+  border-radius: 50%;
+}
+
+.card-id {
+  font-variant-numeric: tabular-nums;
+}
+
+.card-title {
+  align-self: center;
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 0.94rem;
+  font-weight: 800;
+  line-height: 1.42;
+  text-align: center;
+  text-wrap: balance;
+  word-break: break-word;
+}
+
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 7px;
+  border-top: 1px dashed rgba(37, 34, 30, 0.28);
+  color: #6d665b;
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.04em;
+}
+
+.expand-status {
+  color: #5e574d;
+}
+
+.node-card[aria-expanded="true"] .expand-status {
+  color: #97151a;
+  font-weight: 900;
+}
+
+.board-hud {
+  position: sticky;
+  bottom: 16px;
+  left: 16px;
+  z-index: 12;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 22px;
+  width: min(480px, calc(100vw - var(--sidebar-width) - 32px));
+  min-width: 300px;
+  margin: -86px 0 16px 16px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(9, 10, 12, 0.9);
+  box-shadow: var(--shadow-deep);
+  backdrop-filter: blur(10px);
+  pointer-events: none;
+}
+
+.board-hud > div {
+  white-space: nowrap;
+}
+
+.board-hud strong {
+  display: inline-block;
+  margin-top: 3px;
+  color: #ffffff;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.hud-unit,
+.board-hud p {
+  color: #8f8c85;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+}
+
+.board-hud p {
+  margin: 0;
+  line-height: 1.5;
+  text-align: right;
+}
+
+/* ── Case file sidebar ──────────────────────────────────────────── */
+.sidebar {
+  position: relative;
+  z-index: 15;
+  grid-column: 2;
+  grid-row: 2;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-left: 1px solid var(--rule);
+  background:
+    linear-gradient(135deg, rgba(196, 22, 28, 0.06), transparent 22%),
+    var(--panel-black);
+  box-shadow: -16px 0 42px rgba(0, 0, 0, 0.3);
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 21px 20px 17px;
+  border-bottom: 1px solid var(--rule);
+  background: rgba(9, 10, 12, 0.58);
+}
+
+.sidebar-header h2 {
+  margin: 4px 0 0;
+  font-family: var(--font-body);
+  font-size: 1.08rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.security-level {
+  padding: 5px 8px;
+  border: 2px solid var(--signal-red);
+  color: var(--signal-red-hot);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  transform: rotate(-4deg);
+}
+
+.sidebar-content {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 22px 20px 28px;
+}
+
+.sidebar-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--rule);
+  color: #62636a;
+  background: var(--ink-deep);
+  font-family: var(--font-mono);
+  font-size: 0.57rem;
+  letter-spacing: 0.06em;
+}
+
+.empty-state {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  min-height: 100%;
+  color: #777981;
+  text-align: center;
+}
+
+.empty-state p {
+  max-width: 27ch;
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.7;
+}
+
+.empty-state .empty-title {
+  color: #d1cec7;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.empty-crosshair {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 4px;
+  border: 1px solid #3a3c42;
+  border-radius: 50%;
+}
+
+.empty-crosshair::before,
+.empty-crosshair::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  background: #3a3c42;
+  transform: translate(-50%, -50%);
+}
+
+.empty-crosshair::before {
+  width: 84px;
+  height: 1px;
+}
+
+.empty-crosshair::after {
+  width: 1px;
+  height: 84px;
+}
+
+.detail-card {
+  --detail-color: var(--type-person);
+  display: grid;
+  gap: 18px;
+  animation: fileReveal 260ms ease both;
+}
+
+.detail-card[data-type="person"] { --detail-color: var(--type-person); }
+.detail-card[data-type="code"] { --detail-color: var(--type-code); }
+.detail-card[data-type="event"] { --detail-color: var(--type-event); }
+.detail-card[data-type="item"] { --detail-color: var(--type-item); }
+
+.detail-classification {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.detail-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #d7d4cd;
+  font-family: var(--font-mono);
+  font-size: 0.67rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.detail-type::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--detail-color);
+  border-radius: 50%;
+}
+
+.detail-record-id {
+  color: #696b72;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.detail-name {
+  margin: 0;
+  padding: 0 0 13px;
+  border-bottom: 3px solid var(--detail-color);
+  color: #ffffff;
+  font-size: clamp(1.35rem, 2.2vw, 1.8rem);
+  font-weight: 900;
+  line-height: 1.28;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.detail-desc-block {
+  position: relative;
+  padding: 17px 16px 16px 19px;
+  border: 1px solid #32343a;
+  background: #1b1c21;
+}
+
+.detail-desc-block::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  left: -1px;
+  width: 3px;
+  background: var(--detail-color);
+}
+
+.detail-label {
+  display: block;
+  margin-bottom: 8px;
+  color: #70727a;
+  font-family: var(--font-mono);
+  font-size: 0.61rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.detail-desc {
+  margin: 0;
+  color: #d0cec8;
+  font-size: 0.88rem;
+  line-height: 1.82;
+}
+
+.relations-section {
+  display: grid;
+  gap: 9px;
+}
+
+.relations-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #303239;
+}
+
+.relations-heading h3 {
+  margin: 0;
+  color: #f0ede6;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.relations-heading span {
+  color: #6f7178;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.relations-list {
+  display: grid;
+  gap: 7px;
+}
+
+.relation-item {
+  --relation-color: var(--type-person);
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 46px;
+  padding: 9px 10px;
+  border: 1px solid #303239;
+  border-radius: 0;
+  color: #d6d4ce;
+  background: #1a1b20;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.relation-item[data-type="person"] { --relation-color: var(--type-person); }
+.relation-item[data-type="code"] { --relation-color: var(--type-code); }
+.relation-item[data-type="event"] { --relation-color: var(--type-event); }
+.relation-item[data-type="item"] { --relation-color: var(--type-item); }
+
+.relation-item:hover {
+  border-color: #5a5d66;
+  background: #24262c;
+  transform: translateX(2px);
+}
+
+.relation-marker {
+  width: 8px;
+  height: 18px;
+  background: var(--relation-color);
+}
+
+.relation-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.relation-kind {
+  color: #777981;
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.relation-name {
+  overflow: hidden;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.relation-arrow {
+  color: #777981;
+  font-family: var(--font-mono);
+}
+
+/* ── 第二層詳細情報：可收合展開區 ─────────────────────────────────── */
+.details-disclosure {
+  display: grid;
+  gap: 0;
+}
+
+.details-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid #3a3c42;
+  border-radius: 0;
+  background: #18191e;
+  color: #d8d5ce;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.details-toggle:hover {
+  border-color: #5a5d66;
+  background: #20222a;
+}
+
+.details-toggle:focus-visible {
+  outline: 2px solid var(--detail-color, #c98500);
+  outline-offset: 2px;
+}
+
+.details-toggle[aria-expanded="true"] {
+  border-bottom-color: transparent;
+  background: #1f2127;
+}
+
+.details-toggle-label {
+  text-transform: uppercase;
+}
+
+.details-toggle-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid currentColor;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.details-panel {
+  display: grid;
+  gap: 16px;
+  padding: 16px 15px 18px;
+  border: 1px solid #3a3c42;
+  border-top: 0;
+  background: #161719;
+}
+
+.details-panel[hidden] {
+  display: none;
+}
+
+.details-empty {
+  margin: 0;
+  color: #6c6e76;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-style: italic;
+  letter-spacing: 0.04em;
+  line-height: 1.6;
+}
+
+.details-section {
+  display: grid;
+  gap: 7px;
+}
+
+.details-section[data-variant="unconfirmed"] .details-label {
+  color: #c87a4a;
+}
+
+.details-label {
+  color: #70727a;
+  font-family: var(--font-mono);
+  font-size: 0.61rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.details-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.details-list .details-item {
+  position: relative;
+  padding-left: 14px;
+  color: #d0cec8;
+  font-size: 0.82rem;
+  line-height: 1.7;
+}
+
+.details-list .details-item::before {
+  content: "▪";
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--detail-color, #c98500);
+}
+
+.details-relationship {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.relationship-chip {
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  border: 1px solid #3a3c42;
+  border-radius: 0;
+  background: #1a1b20;
+  color: #e6e3dc;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.relationship-chip:hover {
+  border-color: #5a5d66;
+  background: #24262c;
+}
+
+.relationship-chip:focus-visible {
+  outline: 2px solid var(--relation-color, var(--detail-color, #c98500));
+  outline-offset: 2px;
+}
+
+.relationship-chip[data-type="person"] { --relation-color: var(--type-person); }
+.relationship-chip[data-type="code"]   { --relation-color: var(--type-code); }
+.relationship-chip[data-type="event"] { --relation-color: var(--type-event); }
+.relationship-chip[data-type="item"]  { --relation-color: var(--type-item); }
+
+.relationship-summary {
+  flex: 1 1 200px;
+  color: #c4c2bc;
+  font-size: 0.8rem;
+  line-height: 1.65;
+}
+
+.details-timeline {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0 0 0 14px;
+  list-style: none;
+}
+
+.timeline-entry {
+  position: relative;
+  padding-left: 14px;
+  color: #d0cec8;
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+
+.timeline-entry::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 7px;
+  width: 6px;
+  height: 6px;
+  border: 1px solid var(--detail-color, #c98500);
+  border-radius: 50%;
+}
+
+.timeline-stamp {
+  display: block;
+  margin-bottom: 2px;
+  color: #9a9ca3;
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.timeline-body {
+  display: block;
+}
+
+.details-sources {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.source-entry {
+  display: grid;
+  gap: 2px;
+}
+
+.source-site {
+  color: #82848c;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.source-link {
+  color: #9bb8e0;
+  font-size: 0.78rem;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  word-break: break-all;
+}
+
+.source-link:hover {
+  color: #c4d6f0;
+}
+
+@keyframes fileReveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Responsive modes ───────────────────────────────────────────── */
+@media (max-width: 1120px) {
+  :root {
+    --sidebar-width: 320px;
+  }
+
+  .brand-lockup {
+    min-width: 250px;
+  }
+
+  .case-number {
+    display: none;
+  }
+
+  .filter-btn {
+    padding-inline: 9px;
+  }
+}
+
+@media (max-width: 880px) {
+  :root {
+    --header-height: 116px;
+  }
+
+  #app {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: var(--header-height) minmax(0, 1fr) 260px;
+  }
+
+  .control-header {
+    align-items: stretch;
+    flex-direction: column;
+    justify-content: center;
+    gap: 10px;
+    padding: 12px 14px;
+  }
+
+  .brand-lockup {
+    min-width: 0;
+  }
+
+  .brand-kicker {
+    display: none;
+  }
+
+  .toolbar {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .filter-group {
+    min-width: 0;
+    overflow-x: auto;
+  }
+
+  .board-wrapper {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .sidebar {
+    grid-column: 1;
+    grid-row: 3;
+    border-top: 1px solid var(--rule);
+    border-left: 0;
+    box-shadow: 0 -14px 34px rgba(0, 0, 0, 0.35);
+  }
+
+  .sidebar-header {
+    padding: 12px 16px;
+  }
+
+  .sidebar-header h2 {
+    font-size: 0.95rem;
+  }
+
+  .sidebar-content {
+    padding: 16px;
+  }
+
+  .empty-state {
+    grid-template-columns: 50px 1fr;
+    justify-items: start;
+    align-content: center;
+    gap: 4px 14px;
+    min-height: 120px;
+    text-align: left;
+  }
+
+  .empty-crosshair {
+    grid-row: 1 / 3;
+    width: 42px;
+    height: 42px;
+  }
+
+  .empty-crosshair::before {
+    width: 54px;
+  }
+
+  .empty-crosshair::after {
+    height: 54px;
+  }
+
+  .empty-state p {
+    max-width: none;
+  }
+
+  .detail-card {
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 0.9fr);
+    gap: 12px 18px;
+  }
+
+  .detail-classification,
+  .detail-name {
+    grid-column: 1;
+  }
+
+  .detail-desc-block {
+    grid-column: 1;
+  }
+
+  .details-disclosure {
+    grid-column: 1;
+  }
+
+  .relations-section {
+    grid-column: 2;
+    grid-row: 1 / 4;
+  }
+
+  .sidebar-footer {
+    display: none;
+  }
+
+  .board-hud {
+    width: min(440px, calc(100vw - 32px));
+  }
+}
+
+@media (max-width: 620px) {
+  :root {
+    --header-height: 124px;
+  }
+
+  #app {
+    grid-template-rows: var(--header-height) minmax(0, 1fr) 290px;
+  }
+
+  .brand-row h1 {
+    font-size: 1rem;
+  }
+
+  .toolbar {
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .filter-group {
+    flex: 1;
+  }
+
+  .filter-btn {
+    min-width: 48px;
+    padding-inline: 8px;
+  }
+
+  .util-btn {
+    flex: 0 0 auto;
+    padding-inline: 10px;
+    font-size: 0.68rem;
+  }
+
+  .node-card {
+    width: 154px;
+  }
+
+  .board-hud {
+    min-width: 0;
+  }
+
+  .board-hud p {
+    display: none;
+  }
+
+  .detail-card {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .detail-classification,
+  .detail-name,
+  .detail-desc-block,
+  .details-disclosure,
+  .relations-section {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .sidebar-header .security-level {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .node-card,
+  .relation-item,
+  .detail-desc-block,
+  .details-toggle,
+  .details-panel,
+  .relationship-chip {
+    border: 1px solid CanvasText;
+  }
+
+  .relation-marker,
+  .detail-type::before,
+  .card-type::before,
+  .details-list .details-item::before,
+  .timeline-entry::before {
+    forced-color-adjust: none;
+  }
+}
+
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header class="control-header">
+      <div class="brand-lockup" aria-label="黑衣組織機密情報證據板">
+        <span class="brand-kicker">警察廳・極秘搜查資料</span>
+        <div class="brand-row">
+          <h1>BLACK ORGANIZATION</h1>
+          <span class="case-number">CASE / 4869</span>
+        </div>
+      </div>
+
+      <div class="toolbar" aria-label="證據板控制列">
+        <div class="filter-group" role="group" aria-label="分類篩選">
+          <button class="filter-btn active" type="button" data-filter="all" aria-pressed="true">全部</button>
+          <button class="filter-btn" type="button" data-filter="person" aria-pressed="false">人物</button>
+          <button class="filter-btn" type="button" data-filter="code" aria-pressed="false">代號</button>
+          <button class="filter-btn" type="button" data-filter="event" aria-pressed="false">事件</button>
+          <button class="filter-btn" type="button" data-filter="item" aria-pressed="false">物品</button>
+        </div>
+        <button id="reset-layout-btn" class="util-btn" type="button">
+          <span aria-hidden="true">↺</span> 重置佈局
+        </button>
+      </div>
+    </header>
+
+    <main class="board-wrapper" id="board-wrapper" aria-label="互動式證據板">
+      <div id="pinboard" class="pinboard">
+        <svg id="connections-svg" aria-hidden="true"></svg>
+        <div class="board-stamp" aria-hidden="true">
+          <span>TOP SECRET</span>
+          <small>AUTHORIZED EYES ONLY</small>
+        </div>
+        <div class="board-coordinate board-coordinate-x" aria-hidden="true">A&nbsp;&nbsp;&nbsp;B&nbsp;&nbsp;&nbsp;C&nbsp;&nbsp;&nbsp;D&nbsp;&nbsp;&nbsp;E&nbsp;&nbsp;&nbsp;F</div>
+        <div class="board-coordinate board-coordinate-y" aria-hidden="true">01&nbsp;&nbsp;&nbsp;02&nbsp;&nbsp;&nbsp;03&nbsp;&nbsp;&nbsp;04</div>
+      </div>
+
+      <div class="board-hud" aria-live="polite">
+        <div>
+          <span class="hud-label">目前視野</span>
+          <strong id="visible-count">5</strong><span class="hud-unit"> / 19 線索</span>
+        </div>
+        <p>拖曳卡片移動 · 點擊展開或收合關聯</p>
+      </div>
+    </main>
+
+    <aside id="case-file-sidebar" class="sidebar" aria-label="偵探卷宗側欄">
+      <div class="sidebar-header">
+        <div>
+          <span class="sidebar-eyebrow">DETECTIVE CASE FILE</span>
+          <h2>關聯情報卷宗</h2>
+        </div>
+        <span class="security-level">機密</span>
+      </div>
+
+      <div id="sidebar-content" class="sidebar-content">
+        <div class="empty-state">
+          <div class="empty-crosshair" aria-hidden="true"></div>
+          <p class="empty-title">尚未選取線索</p>
+          <p>點擊證據板上的任意卡片，解鎖其深層關係與機密檔案。</p>
+        </div>
+      </div>
+
+      <footer class="sidebar-footer">
+        <span>CONFIDENTIAL-4869</span>
+        <span id="record-clock">SYS / OFFLINE</span>
+      </footer>
+    </aside>
+  </div>
+
+  <script src="script.js"></script>
+<script>
+// 內嵌資料庫：確保使用 file:// 直接開啟時不受 CORS 限制，完全離線可用。
+const evidenceData = [
+  {
+    id: "p1",
+    type: "person",
+    name: "烏丸蓮耶",
+    description: "黑衣組織的創立者與幕後首領，半個世紀前已被官方記錄死亡的日本大富豪，掌控著組織的終極研發目標。",
+    connections: ["e1", "i1", "c1", "c4", "p6"]
+  },
+  {
+    id: "c1",
+    type: "code",
+    name: "朗姆 (Rum / 脇田兼則)",
+    description: "組織的第二把手，右眼為義眼。現使用化名「脇田兼則」在伊呂波壽司店潛伏，17年前在美國犯下羽田浩司命案。",
+    connections: ["p1", "e2", "p2", "p3", "p9", "p11"]
+  },
+  {
+    id: "c2",
+    type: "code",
+    name: "琴酒 (Gin)",
+    description: "組織的高級幹部，冷酷無情，負責前線暗殺、交易與清除叛徒。在熱帶樂園灌下工藤新一 APTX 4869，親手殺害宮野明美。",
+    connections: ["p4", "i1", "c3", "p7", "p8"]
+  },
+  {
+    id: "c3",
+    type: "code",
+    name: "伏特加 (Vodka)",
+    description: "琴酒的貼身助手，忠實執行命令。在追捕卡邁爾時，不慎透露了朗姆「改變容貌並起了一個愚蠢假名」的關鍵情報。",
+    connections: ["c2"]
+  },
+  {
+    id: "c4",
+    type: "code",
+    name: "苦艾酒 (Vermouth)",
+    description: "深受首領寵愛的高級幹部，著名美國女星，擁有不老容顏。因新一和小蘭曾救過她，私下隱瞞新一與志保變小的秘密。",
+    connections: ["p1", "p4", "p5", "i1"]
+  },
+  {
+    id: "p4",
+    type: "person",
+    name: "工藤新一 (江戶川柯南)",
+    description: "高中生偵探，被琴酒灌下 APTX 4869 後身體縮小，化名江戶川柯南，與 FBI、公安聯手調查組織，誓死解開羽田浩司等案件之謎。",
+    connections: ["c2", "p5", "i1", "c4", "p9", "p8"]
+  },
+  {
+    id: "p5",
+    type: "person",
+    name: "宮野志保 (雪莉 / 灰原哀)",
+    description: "組織的前科學家，代號「雪莉」。繼承父母研究並主導 APTX 4869 的開發。在姐姐明美被殺後吞藥企圖自殺，身體縮小並叛逃。",
+    connections: ["p4", "i1", "p6", "p7", "c4"]
+  },
+  {
+    id: "p6",
+    type: "person",
+    name: "宮野厚司 & 艾蓮娜",
+    description: "組織初期的科學家夫婦，被稱為「地獄天使」。19年前接受烏丸集團贊助開啟核心藥物研發，在研發出「銀色子彈」後死於神祕火災。",
+    connections: ["p1", "p5", "p7", "e1", "i1"]
+  },
+  {
+    id: "p7",
+    type: "person",
+    name: "宮野明美",
+    description: "志保的姐姐，組織外圍成員。為了帶妹妹脫離組織，答應執行十億元搶劫案，最終在達成條件後仍被琴酒殘忍殺害。",
+    connections: ["c2", "p5", "p6", "p8"]
+  },
+  {
+    id: "p8",
+    type: "person",
+    name: "赤井秀一 (萊伊 / 沖矢昴)",
+    description: "FBI 高級搜查官，曾化名「諸星大」並以代號「萊伊」滲透組織。其父赤井務武因調查17年前羽田浩司案而失蹤，促使秀一加入 FBI。",
+    connections: ["p7", "c2", "p4", "p10", "e2", "p11"]
+  },
+  {
+    id: "p9",
+    type: "person",
+    name: "安室透 (降谷零 / 波本)",
+    description: "日本警察廳公安臥底。在現代事件中意外拾獲若狹留美掉落的「角行」將棋棋子，並依此判斷其主人為17年前遇害的羽田浩司而對若狹展開警戒。",
+    connections: ["c1", "p4", "p10", "i2"]
+  },
+  {
+    id: "p10",
+    type: "person",
+    name: "諸伏景光 (蘇格蘭)",
+    description: "警視廳公安臥底，本名諸伏景光，代號「蘇格蘭」。臥底身分暴露後，為了不連累同僚與家人，在赤井面前奪槍自殺殉職。",
+    connections: ["p9", "p8"]
+  },
+  {
+    id: "p11",
+    type: "person",
+    name: "羽田浩司",
+    description: "天才將棋棋手，17年前在美國涉入命案，被朗姆以藥物殺害。死前留下臨終訊息並將角行棋子留給淺香。羽田秀吉為其無血緣關係之義弟。",
+    connections: ["e2", "i2", "p2", "p8", "c1"]
+  },
+  {
+    id: "p2",
+    type: "person",
+    name: "若狹留美 (蕾切爾·淺香)",
+    description: "帝丹小學副班導師，真實身分為17年前阿曼達的保鏢「淺香」。案發時獲羽田浩司保護並贈予「角行」棋子作為護身符，此後隨身攜帶，近期意外被安室透拾獲。",
+    connections: ["c1", "e2", "i2", "p3", "p11"]
+  },
+  {
+    id: "p3",
+    type: "person",
+    name: "黑田兵衛",
+    description: "警視廳管理官，17年前在美國涉入羽田浩司命案並在救助淺香時遭遇車禍昏迷10年。目前正聯手柯南重新調查羽田浩司案的真相。",
+    connections: ["c1", "e2", "p2"]
+  },
+  {
+    id: "e1",
+    type: "event",
+    name: "藥物計畫啟動",
+    description: "超過50年前由大富豪烏丸蓮耶啟動的極秘科學計畫，旨在達成組織「逆轉時間流逝」的終極目的，為 APTX 4869 的起源。",
+    connections: ["p1", "p6", "i1"]
+  },
+  {
+    id: "e2",
+    type: "event",
+    name: "羽田浩司命案",
+    description: "17年前發生在美國的未解懸案。羽田浩司與美國富豪阿曼達被朗姆以藥物殺害，浩司死前留下了指向「ASACA RUM」的剪切臨終訊息，且隨身攜帶的「角行」棋子從現場神祕消失。",
+    connections: ["c1", "p2", "p3", "p8", "i2", "p11"]
+  },
+  {
+    id: "i1",
+    type: "item",
+    name: "APTX 4869",
+    description: "由宮野夫婦研發、後由雪莉（志保）繼承開發的神秘藥物。臨床上作為無痕毒藥使用，卻會偶發性導致人體細胞退化縮小。",
+    connections: ["e1", "p4", "p5", "p6", "c4", "c2", "p1"]
+  },
+  {
+    id: "i2",
+    type: "item",
+    name: "角行將棋棋子",
+    description: "羽田浩司生前作為護身符不離身的將棋棋子「角行」。案發時浩司將其贈予淺香（若狹留美）作為防身與牽絆，此後被其隨身攜帶，於現代事件中不慎掉落並被安室透拾獲，成為破解懸案之關鍵。",
+    connections: ["e2", "p2", "p9", "p11"]
+  }
+];
+
+// ── 第二層詳細情報資料模型 ─────────────────────────────────────────
+// 採用「空骨架待補」策略：結構與欄位齊備，但各筆詳細內容留空，
+// 待使用者提供情報材料後再填入。絕不自行編造劇情設定。
+//
+// 每筆 details 可包含：
+//   identity        身分背景（字串）
+//   aliases         別名清單（字串陣列）
+//   affiliations    所屬組織／陣營（字串陣列）
+//   timeline        [{ label, content }]
+//   relationships   [{ targetId, summary }]
+//   relatedItems    相關物品（字串陣列）
+//   confirmedFacts  已確認情報（字串陣列）
+//   unconfirmed     尚未確認或有爭議情報（字串陣列）
+//   sources         [{ site, title, url }]
+//
+// 任何欄位缺空或為空陣列時，UI 不會渲染該區塊。
+const DETAILS_PLACEHOLDER = "（待補，等待情報材料）";
+
+function emptyDetails() {
+  return {
+    identity: "",
+    aliases: [],
+    affiliations: [],
+    timeline: [],
+    relationships: [],
+    relatedItems: [],
+    confirmedFacts: [],
+    unconfirmed: [],
+    sources: []
+  };
+}
+
+const evidenceDetails = {};
+evidenceData.forEach((node) => {
+  evidenceDetails[node.id] = emptyDetails();
+});
+
+function getDetails(nodeId) {
+  const stored = evidenceDetails[nodeId];
+  if (!stored) return emptyDetails();
+  // 合併至完整骨架：即使只提供部分欄位，也能補齊缺空的陣列／字串，
+  // 避免 renderDetailsPanel 讀取未定義欄位而崩潰。
+  const base = emptyDetails();
+  return {
+    identity: stored.identity ?? base.identity,
+    aliases: Array.isArray(stored.aliases) ? stored.aliases : base.aliases,
+    affiliations: Array.isArray(stored.affiliations) ? stored.affiliations : base.affiliations,
+    timeline: Array.isArray(stored.timeline) ? stored.timeline : base.timeline,
+    relationships: Array.isArray(stored.relationships) ? stored.relationships : base.relationships,
+    relatedItems: Array.isArray(stored.relatedItems) ? stored.relatedItems : base.relatedItems,
+    confirmedFacts: Array.isArray(stored.confirmedFacts) ? stored.confirmedFacts : base.confirmedFacts,
+    unconfirmed: Array.isArray(stored.unconfirmed) ? stored.unconfirmed : base.unconfirmed,
+    sources: Array.isArray(stored.sources) ? stored.sources : base.sources
+  };
+}
+
+const TYPE_LABELS = {
+  person: "主要人物",
+  code: "組織代號",
+  event: "關鍵事件",
+  item: "專屬物品"
+};
+
+const TYPE_SHORT_LABELS = {
+  person: "人物",
+  code: "代號",
+  event: "事件",
+  item: "物品"
+};
+
+const CORE_NODE_IDS = ["p1", "c1", "c2", "p4", "i1"];
+const INITIAL_POSITIONS = {
+  p1: { x: 500, y: 105 },
+  c1: { x: 265, y: 285 },
+  c2: { x: 735, y: 285 },
+  p4: { x: 500, y: 605 },
+  i1: { x: 500, y: 355 }
+};
+
+let activeNodeId = null;
+let currentFilter = "all";
+let positions = clonePositions(INITIAL_POSITIONS);
+const expandedNodeIds = new Set();
+
+const pinboard = document.getElementById("pinboard");
+const svgLayer = document.getElementById("connections-svg");
+const sidebarContent = document.getElementById("sidebar-content");
+const boardWrapper = document.getElementById("board-wrapper");
+const visibleCount = document.getElementById("visible-count");
+
+function clonePositions(source) {
+  return Object.fromEntries(
+    Object.entries(source).map(([id, position]) => [id, { ...position }])
+  );
+}
+
+function hashString(value) {
+  return [...value].reduce((hash, character) => ((hash << 5) - hash + character.charCodeAt(0)) | 0, 0);
+}
+
+function getNode(nodeId) {
+  return evidenceData.find((node) => node.id === nodeId);
+}
+
+function areConnected(firstId, secondId) {
+  const first = getNode(firstId);
+  const second = getNode(secondId);
+  return Boolean(
+    first && second &&
+    (first.connections.includes(secondId) || second.connections.includes(firstId))
+  );
+}
+
+function getVisibleNodeIds() {
+  const visibleIds = new Set(CORE_NODE_IDS);
+
+  expandedNodeIds.forEach((nodeId) => {
+    const node = getNode(nodeId);
+    if (!node) return;
+    visibleIds.add(nodeId);
+    node.connections.forEach((connectionId) => visibleIds.add(connectionId));
+  });
+
+  if (activeNodeId) visibleIds.add(activeNodeId);
+  return visibleIds;
+}
+
+function getActiveFilterButton() {
+  return document.querySelector(".filter-btn.active");
+}
+
+function init() {
+  renderBoard();
+  setupFilters();
+  setupResetLayout();
+  updateRecordClock();
+
+  window.addEventListener("resize", drawConnections);
+  window.setInterval(updateRecordClock, 60000);
+
+  window.requestAnimationFrame(() => {
+    boardWrapper.scrollTo({ left: 70, top: 24, behavior: "auto" });
+  });
+}
+
+function renderBoard() {
+  preserveRenderedPositions();
+  pinboard.querySelectorAll(".node-card").forEach((card) => card.remove());
+
+  const visibleIds = getVisibleNodeIds();
+  const displayedNodes = evidenceData.filter((node) => {
+    const matchesFilter = currentFilter === "all" || node.type === currentFilter;
+    return visibleIds.has(node.id) && matchesFilter;
+  });
+
+  displayedNodes.forEach((node) => {
+    if (!positions[node.id]) {
+      positions[node.id] = findFallbackPosition(node.id);
+    }
+    pinboard.appendChild(createNodeCard(node));
+  });
+
+  visibleCount.textContent = String(displayedNodes.length);
+  updateCardVisuals();
+  drawConnections();
+}
+
+function preserveRenderedPositions() {
+  pinboard.querySelectorAll(".node-card").forEach((card) => {
+    positions[card.dataset.nodeId] = {
+      x: Number.parseFloat(card.style.left),
+      y: Number.parseFloat(card.style.top)
+    };
+  });
+}
+
+function createNodeCard(node) {
+  const card = document.createElement("article");
+  const rotation = ((Math.abs(hashString(node.id)) % 7) - 3) * 0.32;
+
+  card.id = `node-${node.id}`;
+  card.className = "node-card";
+  card.dataset.nodeId = node.id;
+  card.dataset.type = node.type;
+  card.tabIndex = 0;
+  card.setAttribute("role", "button");
+  card.setAttribute("aria-label", `${node.name}，${TYPE_LABELS[node.type]}，點擊展開或收合關聯線索`);
+  card.setAttribute("aria-expanded", String(expandedNodeIds.has(node.id)));
+  card.style.left = `${positions[node.id].x}px`;
+  card.style.top = `${positions[node.id].y}px`;
+  card.style.setProperty("--card-rotation", `${rotation}deg`);
+
+  const meta = document.createElement("div");
+  meta.className = "card-meta";
+
+  const type = document.createElement("span");
+  type.className = "card-type";
+  type.textContent = TYPE_SHORT_LABELS[node.type];
+
+  const id = document.createElement("span");
+  id.className = "card-id";
+  id.textContent = node.id.toUpperCase().padStart(4, "0");
+
+  const title = document.createElement("h2");
+  title.className = "card-title";
+  title.textContent = node.name;
+
+  const footer = document.createElement("div");
+  footer.className = "card-footer";
+
+  const connectionCount = document.createElement("span");
+  connectionCount.textContent = `${node.connections.length} RELATIONS`;
+
+  const expandStatus = document.createElement("span");
+  expandStatus.className = "expand-status";
+  expandStatus.textContent = expandedNodeIds.has(node.id) ? "− 收合" : "+ 展開";
+
+  meta.append(type, id);
+  footer.append(connectionCount, expandStatus);
+  card.append(meta, title, footer);
+
+  makeElementInteractive(card, node);
+  return card;
+}
+
+function makeElementInteractive(card, node) {
+  let pointerId = null;
+  let startX = 0;
+  let startY = 0;
+  let startLeft = 0;
+  let startTop = 0;
+  let hasMoved = false;
+
+  card.addEventListener("pointerdown", (event) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+
+    event.preventDefault();
+    pointerId = event.pointerId;
+    startX = event.clientX;
+    startY = event.clientY;
+    startLeft = card.offsetLeft;
+    startTop = card.offsetTop;
+    hasMoved = false;
+    card.setPointerCapture(pointerId);
+  });
+
+  card.addEventListener("pointermove", (event) => {
+    if (event.pointerId !== pointerId) return;
+
+    const deltaX = event.clientX - startX;
+    const deltaY = event.clientY - startY;
+
+    if (!hasMoved && Math.hypot(deltaX, deltaY) < 5) return;
+
+    hasMoved = true;
+    card.classList.add("dragging");
+
+    const maxX = pinboard.clientWidth - card.offsetWidth - 18;
+    const maxY = pinboard.clientHeight - card.offsetHeight - 18;
+    const nextX = Math.max(18, Math.min(maxX, startLeft + deltaX));
+    const nextY = Math.max(18, Math.min(maxY, startTop + deltaY));
+
+    card.style.left = `${nextX}px`;
+    card.style.top = `${nextY}px`;
+    positions[node.id] = { x: nextX, y: nextY };
+    drawConnections();
+  });
+
+  const finishPointer = (event) => {
+    if (event.pointerId !== pointerId) return;
+
+    if (card.hasPointerCapture(pointerId)) {
+      card.releasePointerCapture(pointerId);
+    }
+
+    card.classList.remove("dragging");
+    pointerId = null;
+
+    if (!hasMoved) {
+      selectNode(node);
+    }
+  };
+
+  card.addEventListener("pointerup", finishPointer);
+  card.addEventListener("pointercancel", (event) => {
+    if (event.pointerId !== pointerId) return;
+    card.classList.remove("dragging");
+    pointerId = null;
+  });
+
+  card.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    selectNode(node);
+  });
+}
+
+function seedConnectedPositions(node) {
+  const parentPosition = positions[node.id] || findFallbackPosition(node.id);
+  const total = Math.max(node.connections.length, 1);
+
+  node.connections.forEach((connectionId, index) => {
+    if (positions[connectionId]) return;
+
+    const baseAngle = (index / total) * Math.PI * 2;
+    const offset = (Math.abs(hashString(`${node.id}-${connectionId}`)) % 31) / 100;
+    const angle = baseAngle + offset;
+    const radiusX = 225 + (index % 2) * 35;
+    const radiusY = 175 + ((index + 1) % 2) * 30;
+
+    positions[connectionId] = {
+      x: clamp(parentPosition.x + Math.cos(angle) * radiusX, 32, pinboard.clientWidth - 205),
+      y: clamp(parentPosition.y + Math.sin(angle) * radiusY, 42, pinboard.clientHeight - 160)
+    };
+  });
+}
+
+function findFallbackPosition(nodeId) {
+  const hash = Math.abs(hashString(nodeId));
+  return {
+    x: 380 + (hash % 780),
+    y: 180 + ((hash * 7) % 720)
+  };
+}
+
+function clamp(value, minimum, maximum) {
+  return Math.max(minimum, Math.min(maximum, value));
+}
+
+function selectNode(node) {
+  if (activeNodeId === node.id) {
+    if (expandedNodeIds.has(node.id)) {
+      expandedNodeIds.delete(node.id);
+    } else {
+      expandedNodeIds.add(node.id);
+      seedConnectedPositions(node);
+    }
+  } else {
+    activeNodeId = node.id;
+    expandedNodeIds.add(node.id);
+    seedConnectedPositions(node);
+  }
+
+  renderBoard();
+  populateSidebar(node);
+}
+
+function drawConnections() {
+  svgLayer.replaceChildren();
+  const drawnKeys = new Set();
+
+  evidenceData.forEach((node) => {
+    const fromCard = document.getElementById(`node-${node.id}`);
+    if (!fromCard) return;
+
+    node.connections.forEach((connectionId) => {
+      const toCard = document.getElementById(`node-${connectionId}`);
+      if (!toCard) return;
+
+      const key = [node.id, connectionId].sort().join("-");
+      if (drawnKeys.has(key)) return;
+      drawnKeys.add(key);
+
+      const x1 = fromCard.offsetLeft + fromCard.offsetWidth / 2;
+      const y1 = fromCard.offsetTop + 4;
+      const x2 = toCard.offsetLeft + toCard.offsetWidth / 2;
+      const y2 = toCard.offsetTop + 4;
+      const curve = createCurvePath(x1, y1, x2, y2, key);
+      const isActive = activeNodeId && (node.id === activeNodeId || connectionId === activeNodeId);
+      const isDimmed = activeNodeId && !isActive;
+
+      const shadow = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      shadow.setAttribute("d", curve);
+      shadow.setAttribute("class", `connection-shadow${isDimmed ? " dimmed-connection" : ""}`);
+
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      line.setAttribute("d", curve);
+      line.setAttribute("class", [
+        "connection-line",
+        isActive ? "active-connection" : "",
+        isDimmed ? "dimmed-connection" : ""
+      ].filter(Boolean).join(" "));
+
+      const knot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      knot.setAttribute("cx", String(x1));
+      knot.setAttribute("cy", String(y1));
+      knot.setAttribute("r", isActive ? "4" : "3");
+      knot.setAttribute("class", `connection-knot${isDimmed ? " dimmed-connection" : ""}`);
+
+      svgLayer.append(shadow, line, knot);
+    });
+  });
+}
+
+function createCurvePath(x1, y1, x2, y2, key) {
+  const deltaX = x2 - x1;
+  const deltaY = y2 - y1;
+  const length = Math.max(Math.hypot(deltaX, deltaY), 1);
+  const normalX = -deltaY / length;
+  const normalY = deltaX / length;
+  const hash = hashString(key);
+  const direction = hash % 2 === 0 ? 1 : -1;
+  const bend = (15 + (Math.abs(hash) % 28)) * direction;
+  const controlX = (x1 + x2) / 2 + normalX * bend;
+  const controlY = (y1 + y2) / 2 + normalY * bend;
+  return `M ${x1} ${y1} Q ${controlX} ${controlY} ${x2} ${y2}`;
+}
+
+function updateCardVisuals() {
+  evidenceData.forEach((node) => {
+    const card = document.getElementById(`node-${node.id}`);
+    if (!card) return;
+
+    card.classList.remove("active-card", "related-card", "dimmed-card");
+    card.setAttribute("aria-expanded", String(expandedNodeIds.has(node.id)));
+
+    const status = card.querySelector(".expand-status");
+    if (status) {
+      status.textContent = expandedNodeIds.has(node.id) ? "− 收合" : "+ 展開";
+    }
+
+    if (!activeNodeId) return;
+
+    if (node.id === activeNodeId) {
+      card.classList.add("active-card");
+    } else if (areConnected(activeNodeId, node.id)) {
+      card.classList.add("related-card");
+    } else {
+      card.classList.add("dimmed-card");
+    }
+  });
+}
+
+function populateSidebar(node) {
+  const detail = document.createElement("article");
+  detail.className = "detail-card";
+  detail.dataset.type = node.type;
+
+  const classification = document.createElement("div");
+  classification.className = "detail-classification";
+
+  const type = document.createElement("span");
+  type.className = "detail-type";
+  type.textContent = TYPE_LABELS[node.type];
+
+  const recordId = document.createElement("span");
+  recordId.className = "detail-record-id";
+  recordId.textContent = `RECORD ${node.id.toUpperCase().padStart(4, "0")}`;
+
+  const name = document.createElement("h1");
+  name.className = "detail-name";
+  name.textContent = node.name;
+
+  const descriptionBlock = document.createElement("section");
+  descriptionBlock.className = "detail-desc-block";
+
+  const descriptionLabel = document.createElement("span");
+  descriptionLabel.className = "detail-label";
+  descriptionLabel.textContent = "INTELLIGENCE ABSTRACT / 情報摘要";
+
+  const description = document.createElement("p");
+  description.className = "detail-desc";
+  description.textContent = node.description;
+
+  const relations = document.createElement("section");
+  relations.className = "relations-section";
+
+  const relationsHeading = document.createElement("div");
+  relationsHeading.className = "relations-heading";
+
+  const relationsTitle = document.createElement("h3");
+  relationsTitle.textContent = "直接關聯線索";
+
+  const relationsCount = document.createElement("span");
+  relationsCount.textContent = `${String(node.connections.length).padStart(2, "0")} LINKS`;
+
+  const relationsList = document.createElement("div");
+  relationsList.className = "relations-list";
+
+  node.connections.forEach((connectionId) => {
+    const relatedNode = getNode(connectionId);
+    if (!relatedNode) return;
+    relationsList.appendChild(createRelationButton(relatedNode));
+  });
+
+  classification.append(type, recordId);
+  descriptionBlock.append(descriptionLabel, description);
+  relationsHeading.append(relationsTitle, relationsCount);
+  relations.append(relationsHeading, relationsList);
+  detail.append(classification, name, descriptionBlock, createDetailsDisclosure(node), relations);
+  sidebarContent.replaceChildren(detail);
+}
+
+// ── 第二層詳細情報：可收合展開區 ───────────────────────────────────
+function createDetailsDisclosure(node) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "details-disclosure";
+
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "details-toggle";
+  button.setAttribute("aria-expanded", "false");
+  button.setAttribute("aria-controls", `details-panel-${node.id}`);
+
+  const toggleLabel = document.createElement("span");
+  toggleLabel.className = "details-toggle-label";
+  toggleLabel.textContent = "展開完整情報";
+
+  const toggleIcon = document.createElement("span");
+  toggleIcon.className = "details-toggle-icon";
+  toggleIcon.setAttribute("aria-hidden", "true");
+  toggleIcon.textContent = "+";
+
+  button.append(toggleLabel, toggleIcon);
+
+  const panel = document.createElement("div");
+  panel.id = `details-panel-${node.id}`;
+  panel.className = "details-panel";
+  panel.hidden = true;
+
+  button.addEventListener("click", () => {
+    const isOpen = button.getAttribute("aria-expanded") === "true";
+    button.setAttribute("aria-expanded", String(!isOpen));
+    toggleLabel.textContent = isOpen ? "展開完整情報" : "收合完整情報";
+    toggleIcon.textContent = isOpen ? "+" : "−";
+    panel.hidden = isOpen;
+  });
+
+  renderDetailsPanel(panel, node);
+  wrapper.append(button, panel);
+  return wrapper;
+}
+
+function renderDetailsPanel(panel, node) {
+  const details = getDetails(node.id);
+
+  const sections = [];
+
+  if (details.identity) {
+    sections.push(buildDetailSection("身分背景", [details.identity]));
+  }
+  if (details.aliases.length) {
+    sections.push(buildDetailSection("別名", details.aliases));
+  }
+  if (details.affiliations.length) {
+    sections.push(buildDetailSection("所屬組織／陣營", details.affiliations));
+  }
+  if (details.timeline.length) {
+    const items = details.timeline.map((entry) => ({
+      label: entry.label,
+      content: entry.content
+    }));
+    sections.push(buildTimelineSection("時間線", items));
+  }
+  if (details.relationships.length) {
+    sections.push(buildRelationshipSection("人物關係", node, details.relationships));
+  }
+  if (details.relatedItems.length) {
+    sections.push(buildDetailSection("相關物品", details.relatedItems));
+  }
+  if (details.confirmedFacts.length) {
+    sections.push(buildDetailSection("已確認情報", details.confirmedFacts));
+  }
+  if (details.unconfirmed.length) {
+    sections.push(buildDetailSection("尚未確認或有爭議", details.unconfirmed, true));
+  }
+  if (details.sources.length) {
+    sections.push(buildSourcesSection("資料來源", details.sources));
+  }
+
+  if (!sections.length) {
+    const note = document.createElement("p");
+    note.className = "details-empty";
+    note.textContent = DETAILS_PLACEHOLDER;
+    panel.appendChild(note);
+    return;
+  }
+
+  sections.forEach((section) => panel.appendChild(section));
+}
+
+function buildDetailSection(label, items, isUnconfirmed = false) {
+  const section = document.createElement("section");
+  section.className = "details-section";
+  if (isUnconfirmed) section.dataset.variant = "unconfirmed";
+
+  const heading = document.createElement("span");
+  heading.className = "details-label";
+  heading.textContent = label;
+
+  const list = document.createElement("ul");
+  list.className = "details-list";
+
+  items.forEach((item) => {
+    const li = document.createElement("li");
+    li.className = "details-item";
+    li.textContent = item;
+    list.appendChild(li);
+  });
+
+  section.append(heading, list);
+  return section;
+}
+
+function buildTimelineSection(label, entries) {
+  const section = document.createElement("section");
+  section.className = "details-section";
+
+  const heading = document.createElement("span");
+  heading.className = "details-label";
+  heading.textContent = label;
+
+  const list = document.createElement("ol");
+  list.className = "details-timeline";
+
+  entries.forEach((entry) => {
+    const li = document.createElement("li");
+    li.className = "timeline-entry";
+
+    const stamp = document.createElement("span");
+    stamp.className = "timeline-stamp";
+    stamp.textContent = entry.label;
+
+    const body = document.createElement("span");
+    body.className = "timeline-body";
+    body.textContent = entry.content;
+
+    li.append(stamp, body);
+    list.appendChild(li);
+  });
+
+  section.append(heading, list);
+  return section;
+}
+
+function buildRelationshipSection(label, node, relationships) {
+  const section = document.createElement("section");
+  section.className = "details-section";
+
+  const heading = document.createElement("span");
+  heading.className = "details-label";
+  heading.textContent = label;
+
+  const list = document.createElement("ul");
+  list.className = "details-list";
+
+  relationships.forEach((rel) => {
+    const li = document.createElement("li");
+    li.className = "details-item details-relationship";
+
+    const target = getNode(rel.targetId);
+    if (target) {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "relationship-chip";
+      chip.dataset.type = target.type;
+      chip.textContent = target.name;
+      chip.setAttribute("aria-label", `前往關聯線索：${target.name}`);
+      chip.addEventListener("click", () => handleRelationClick(target.id));
+      li.append(chip, document.createTextNode("　"));
+    }
+
+    const summary = document.createElement("span");
+    summary.className = "relationship-summary";
+    summary.textContent = rel.summary;
+    li.appendChild(summary);
+
+    list.appendChild(li);
+  });
+
+  section.append(heading, list);
+  return section;
+}
+
+function buildSourcesSection(label, sources) {
+  const section = document.createElement("section");
+  section.className = "details-section";
+
+  const heading = document.createElement("span");
+  heading.className = "details-label";
+  heading.textContent = label;
+
+  const list = document.createElement("ul");
+  list.className = "details-sources";
+
+  sources.forEach((src) => {
+    const li = document.createElement("li");
+    li.className = "source-entry";
+
+    const site = document.createElement("span");
+    site.className = "source-site";
+    site.textContent = src.site || "";
+
+    const link = document.createElement("a");
+    link.className = "source-link";
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    // 安全插入：url 與 title 皆來自本地策展資料，且僅寫入屬性／textContent，
+    // 不會被當作 HTML 解析，避免注入。
+    if (src.url) {
+      try {
+        link.href = String(src.url);
+        link.textContent = src.title || src.url;
+      } catch {
+        link.textContent = src.title || "";
+      }
+    } else {
+      link.textContent = src.title || "";
+    }
+
+    li.append(site, link);
+    list.appendChild(li);
+  });
+
+  section.append(heading, list);
+  return section;
+}
+
+function createRelationButton(node) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "relation-item";
+  button.dataset.type = node.type;
+  button.setAttribute("aria-label", `前往關聯線索：${node.name}`);
+
+  const marker = document.createElement("span");
+  marker.className = "relation-marker";
+  marker.setAttribute("aria-hidden", "true");
+
+  const copy = document.createElement("span");
+  copy.className = "relation-copy";
+
+  const kind = document.createElement("span");
+  kind.className = "relation-kind";
+  kind.textContent = TYPE_LABELS[node.type];
+
+  const name = document.createElement("span");
+  name.className = "relation-name";
+  name.textContent = node.name;
+
+  const arrow = document.createElement("span");
+  arrow.className = "relation-arrow";
+  arrow.textContent = "→";
+  arrow.setAttribute("aria-hidden", "true");
+
+  copy.append(kind, name);
+  button.append(marker, copy, arrow);
+  button.addEventListener("click", () => handleRelationClick(node.id));
+  return button;
+}
+
+function handleRelationClick(nodeId) {
+  const node = getNode(nodeId);
+  if (!node) return;
+
+  if (currentFilter !== "all" && currentFilter !== node.type) {
+    setActiveFilter("all");
+  }
+
+  activeNodeId = node.id;
+  expandedNodeIds.add(node.id);
+  seedConnectedPositions(node);
+  renderBoard();
+  populateSidebar(node);
+
+  window.requestAnimationFrame(() => {
+    const card = document.getElementById(`node-${node.id}`);
+    card?.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+    card?.focus({ preventScroll: true });
+  });
+}
+
+function resetSidebar() {
+  const empty = document.createElement("div");
+  empty.className = "empty-state";
+
+  const crosshair = document.createElement("div");
+  crosshair.className = "empty-crosshair";
+  crosshair.setAttribute("aria-hidden", "true");
+
+  const title = document.createElement("p");
+  title.className = "empty-title";
+  title.textContent = "尚未選取線索";
+
+  const body = document.createElement("p");
+  body.textContent = "點擊證據板上的任意卡片，解鎖其深層關係與機密檔案。";
+
+  empty.append(crosshair, title, body);
+  sidebarContent.replaceChildren(empty);
+}
+
+function setupFilters() {
+  document.querySelectorAll(".filter-btn").forEach((button) => {
+    button.addEventListener("click", () => {
+      const filter = button.dataset.filter;
+      setActiveFilter(filter);
+
+      const activeNode = activeNodeId ? getNode(activeNodeId) : null;
+      if (activeNode && filter !== "all" && activeNode.type !== filter) {
+        activeNodeId = null;
+        resetSidebar();
+      }
+
+      renderBoard();
+    });
+  });
+}
+
+function setActiveFilter(filter) {
+  currentFilter = filter;
+  document.querySelectorAll(".filter-btn").forEach((button) => {
+    const isActive = button.dataset.filter === filter;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  });
+}
+
+function setupResetLayout() {
+  document.getElementById("reset-layout-btn").addEventListener("click", () => {
+    positions = clonePositions(INITIAL_POSITIONS);
+    expandedNodeIds.clear();
+    activeNodeId = null;
+    setActiveFilter("all");
+    resetSidebar();
+    renderBoard();
+    boardWrapper.scrollTo({ left: 70, top: 24, behavior: "smooth" });
+  });
+}
+
+function updateRecordClock() {
+  const target = document.getElementById("record-clock");
+  const now = new Date();
+  const time = new Intl.DateTimeFormat("zh-Hant", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }).format(now);
+  target.textContent = `SYS / OFFLINE / ${time}`;
+}
+
+init();
+
+</script>
+</body>
+</html>

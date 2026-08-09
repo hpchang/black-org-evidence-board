@@ -1,0 +1,19 @@
+# macOS
+.DS_Store
+._*
+
+# 編輯器 / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 暫存與建構產物
+*.log
+node_modules/
+__pycache__/
+*.tmp
+
+# 備份檔
+*.bak
