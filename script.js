@@ -143,9 +143,9 @@ const evidenceData = [
 //   identity        身分背景（字串）
 //   aliases         別名清單（字串陣列）
 //   affiliations    所屬組織／陣營（字串陣列）
-//   timeline        [{ label, content }]
+//   timeline        [{ label, content, targetId? }]  targetId 可選：把內容裡的對應線索變可點連結
 //   relationships   [{ targetId, summary }]
-//   relatedItems    相關物品（字串陣列）
+//   relatedItems    相關物品（字串或 ID；若為現有節點 ID 則渲染成可點連結）
 //   confirmedFacts  已確認情報（字串陣列）
 //   unconfirmed     尚未確認或有爭議情報（字串陣列）
 //   sources         [{ site, title, url }]
@@ -683,17 +683,13 @@ function renderDetailsPanel(panel, node) {
     sections.push(buildDetailSection("所屬組織／陣營", details.affiliations));
   }
   if (details.timeline.length) {
-    const items = details.timeline.map((entry) => ({
-      label: entry.label,
-      content: entry.content
-    }));
-    sections.push(buildTimelineSection("時間線", items));
+    sections.push(buildTimelineSection("時間線", details.timeline));
   }
   if (details.relationships.length) {
     sections.push(buildRelationshipSection("人物關係", node, details.relationships));
   }
   if (details.relatedItems.length) {
-    sections.push(buildDetailSection("相關物品", details.relatedItems));
+    sections.push(buildRelatedItemsSection("相關物品", details.relatedItems));
   }
   if (details.confirmedFacts.length) {
     sections.push(buildDetailSection("已確認情報", details.confirmedFacts));
@@ -762,7 +758,71 @@ function buildTimelineSection(label, entries) {
     body.className = "timeline-body";
     body.textContent = entry.content;
 
+    // 可選 targetId：若指向現有節點，在內容後附上可點的關聯 chip，
+    // 與「直接關聯線索」共用同一跳轉邏輯。
+    const chip = createDetailLinkChip(entry.targetId);
+    if (chip) body.append("　", chip);
+
     li.append(stamp, body);
+    list.appendChild(li);
+  });
+
+  section.append(heading, list);
+  return section;
+}
+
+// 共用：把 targetId 渲染成可點的關聯 chip，點擊跳轉到該線索卡。
+// 與 buildRelationshipSection、buildRelatedItemsSection 共用同一跳轉。
+function createDetailLinkChip(targetId) {
+  if (!targetId) return null;
+  const target = getNode(targetId);
+  if (!target) return null;
+
+  const chip = document.createElement("button");
+  chip.type = "button";
+  chip.className = "relationship-chip";
+  chip.dataset.type = target.type;
+  chip.textContent = target.name;
+  chip.setAttribute("aria-label", `前往關聯線索：${target.name}`);
+  chip.addEventListener("click", () => handleRelationClick(target.id));
+  return chip;
+}
+
+function buildRelatedItemsSection(label, items) {
+  const section = document.createElement("section");
+  section.className = "details-section";
+
+  const heading = document.createElement("span");
+  heading.className = "details-label";
+  heading.textContent = label;
+
+  const list = document.createElement("ul");
+  list.className = "details-list";
+
+  items.forEach((item) => {
+    const li = document.createElement("li");
+    li.className = "details-item details-relationship";
+
+    // 支援兩種寫法：純字串（顯示文字，或剛好是節點 ID）與 { name, targetId }。
+    const text = typeof item === "string" ? item : (item && item.name) || "";
+    const linkId = item && typeof item === "object" ? item.targetId : text;
+
+    const chip = createDetailLinkChip(linkId);
+    if (chip) {
+      if (text && text !== linkId) {
+        const prefix = document.createElement("span");
+        prefix.className = "relationship-summary";
+        prefix.textContent = text + "　";
+        li.appendChild(prefix);
+      }
+      li.appendChild(chip);
+    } else {
+      const span = document.createElement("span");
+      span.className = "relationship-summary";
+      span.textContent = text;
+      li.appendChild(span);
+    }
+
     list.appendChild(li);
   });
 
@@ -785,17 +845,8 @@ function buildRelationshipSection(label, node, relationships) {
     const li = document.createElement("li");
     li.className = "details-item details-relationship";
 
-    const target = getNode(rel.targetId);
-    if (target) {
-      const chip = document.createElement("button");
-      chip.type = "button";
-      chip.className = "relationship-chip";
-      chip.dataset.type = target.type;
-      chip.textContent = target.name;
-      chip.setAttribute("aria-label", `前往關聯線索：${target.name}`);
-      chip.addEventListener("click", () => handleRelationClick(target.id));
-      li.append(chip, document.createTextNode("　"));
-    }
+    const chip = createDetailLinkChip(rel.targetId);
+    if (chip) li.append(chip, document.createTextNode("　"));
 
     const summary = document.createElement("span");
     summary.className = "relationship-summary";
