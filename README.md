@@ -4,6 +4,8 @@
 
 ## 正式部署
 
+以下為目前記錄的公開部署資訊；repository 本身無法證明外部站點目前在線或 Supabase migration 已套用。
+
 - 網址：<https://www.hpchang.com/black-org-evidence-board/>
 - Open Graph 圖：`assets/og/black-org-evidence-board-og.png`（1200×630）
 - Supabase 計數 slug：`black-org-evidence-board`
@@ -71,7 +73,7 @@ python3 tools/build_standalone.py
 
 證據板 HUD 會在取得有效數字後顯示 `ARCHIVE ACCESS`。同一瀏覽階段第一次載入呼叫 `bump_hits`，重新整理則呼叫 `read_hits`，避免同一個分頁階段重複累加；請求 8 秒逾時或失敗時不顯示。
 
-資料庫 migration 與安全模型說明位於 [`supabase/`](supabase/README.md)。正式部署前需在共享 Supabase 專案套用 `supabase/counter.sql`，把 `black-org-evidence-board` 加入資料列與 RPC 白名單。
+資料庫 migration 與安全模型說明位於 [`supabase/`](supabase/README.md)。`supabase/counter.sql` 是已備妥的 migration 檔；共享 Supabase 專案是否已實際套用，需於外部專案驗證，repository 內容無法證明。若尚未套用、網路不可用或請求逾時，計數器會靜默隱藏，證據板核心功能仍可離線運作。
 
 ## 第二層詳細情報
 
@@ -84,14 +86,14 @@ python3 tools/build_standalone.py
 
 其中時間線、人物關係、相關物品若帶 `targetId`（指向現有線索），會渲染成可點的關聯 chip，點擊跳到該線索卡，與「直接關聯線索」共用同一個跳轉。連結對應穩定 ID，不靠名稱猜測。
 
-詳細情報儲存於 `script.js` 的 `evidenceDetails`（以 ID 為鍵），資料模型見 `script.js` 頂部註解。填寫規範見 `TODO_DETAILS.md`。
+詳細情報儲存於 `script.js` 的 `evidenceDetails`（以 ID 為鍵），資料模型見 `script.js` 頂部註解。填寫與增修規範見 `DETAILS_GUIDE.md`。
 
 ## 當前進度
 
 截至 2026-08-09：
 
 - 19 筆線索、19 個唯一 ID，三份資料（`script.js` evidenceData / `data.json` / `black-org-evidence-data.json`）已同步。
-- 19 筆的第二層詳細情報**已全部補完**，來源為 Detective Conan Wiki（Timeline）。
+- 19 筆線索皆有策展詳細內容與來源（主要來源為 Detective Conan Wiki Timeline），個別欄位可依資料情況留空。
 - 已建立 git 版本控制（main 分支）。
 
 ## 後續待處理

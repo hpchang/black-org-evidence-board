@@ -136,9 +136,10 @@ const evidenceData = [
 ];
 
 // ── 第二層詳細情報資料模型 ─────────────────────────────────────────
-// 採用「空骨架待補」策略：結構與欄位齊備，但各筆詳細內容留空，
-// 待使用者提供情報材料後再填入。絕不自行編造劇情設定。
-//
+// emptyDetails() 先為每個節點建立完整欄位骨架，再由下方已策展的
+// evidenceDetails 依 ID 覆寫。未來新增或缺資料的節點仍會使用空骨架
+// 作為 fallback（UI 對空欄位不渲染，全部為空時顯示 DETAILS_PLACEHOLDER）。
+// 絕不自行編造劇情設定。
 // 每筆 details 可包含：
 //   identity        身分背景（字串）
 //   aliases         別名清單（字串陣列）
@@ -172,7 +173,7 @@ evidenceData.forEach((node) => {
   evidenceDetails[node.id] = emptyDetails();
 });
 
-// ── 已策展的詳細情報（使用者提供材料後整理、改寫，並附來源）────────
+// ── 已策展的詳細情報（依可核實來源整理、改寫，並附來源）────────
 // 寫法對應 renderDetailsPanel 支援的連結型態：
 //   relatedItems 每項可為純字串、節點 ID、或 { name, targetId }
 //   timeline   每條可選 targetId：內容後附可點的關聯 chip

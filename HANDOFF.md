@@ -10,74 +10,51 @@
 /Users/hpchang/Documents/claude/MyProjects/black_organization_of_conan
 ```
 
-這是一個無框架、無套件依賴、可完全離線使用的靜態網頁。使用者可以直接雙擊 `index.html`，不需要本地伺服器。
+無框架、無套件依賴、可完全離線使用的靜態網頁。使用者可直接雙擊 `index.html`，不需本機伺服器。整體視覺為黑紅色 Noir 偵探風格，包含紙張卡片、圖釘、SVG 紅線與機密卷宗側欄。
 
-整體視覺是黑紅色 Noir 偵探風格，包含紙張卡片、圖釘、SVG 紅線和機密卷宗側欄。
+權威來源順序：先讀 `CLAUDE.md` 與 `.claude/skills/maintain-black-org-evidence-board/SKILL.md`，再以 split source（`index.html`、`styles.css`、`script.js`）判斷實際狀態。`README.md`、`HANDOFF.md`、`DETAILS_GUIDE.md` 為補充資料；若與程式或資料不一致，以程式與資料為準，並回報漂移。
 
-## 二、目前檔案
+## 二、檔案職責
 
 ```text
-CLAUDE.md
-README.md
-HANDOFF.md
-index.html
-styles.css
-script.js
-data.json
-black-org-evidence-data.json
-black-org-evidence-board.html
+CLAUDE.md              專案架構、資料不變量、驗證指令
+README.md              使用說明、進度、候選決策、驗證方式
+HANDOFF.md             本檔：移交摘要
+DETAILS_GUIDE.md       詳細情報維護與增修指南
+index.html             網頁固定結構（控制列、證據板、SVG 圖層、卷宗欄）
+styles.css             Noir 視覺系統與響應式版面
+script.js              內嵌 evidenceData／evidenceDetails／cardArt 與全部互動邏輯
+data.json              獨立資料來源
+black-org-evidence-data.json  與 data.json 相同內容的部署命名版本
+black-org-evidence-board.html  內嵌 CSS＋JS＋favicon 的單檔產生版（不可直接編輯）
+tools/build_standalone.py     由 split source 重建單檔版
+tools/generate_og.swift      重建 1200×630 Open Graph 圖
+assets/og/                    OG 圖、來源照片與授權
+supabase/counter.sql          ARCHIVE ACCESS 計數器 migration
+.claude/skills/maintain-black-org-evidence-board/SKILL.md  專案維護流程
 ```
 
-### 檔案職責
-
-- `index.html`
-  - 網頁固定結構。
-  - 包含控制列、證據板、SVG 圖層和右側卷宗欄。
-
-- `styles.css`
-  - Noir 視覺系統。
-  - 桌面、平板與手機響應式版面。
-  - 卡片、紅線、側欄、分類顏色和無障礙狀態。
-
-- `script.js`
-  - 內嵌完整 `evidenceData`。
-  - 負責卡片渲染、拖曳、展開／收合、篩選、SVG 連線和側欄內容。
-  - 資料內嵌是為了確保 `file://` 離線開啟不會發生 CORS 錯誤。
-
-- `data.json`
-  - 獨立資料庫版本。
-
-- `black-org-evidence-data.json`
-  - 與 `data.json` 相同內容的部署命名版本。
-
-- `black-org-evidence-board.html`
-  - 將 CSS 和 JavaScript 全部內嵌的單檔版本。
-  - 這是產生檔，修改時應以 `index.html`、`styles.css`、`script.js` 為準，再重新產生。
-
-- `CLAUDE.md`
-  - 已記錄專案架構、驗證指令、資料同步規則和開發注意事項。
+資料內嵌於 `script.js` 是為了確保 `file://` 離線開啟不會遇到 CORS 限制；不要改成 runtime `fetch` 載入證據資料。
 
 ## 三、目前已完成的功能
 
-1. 卡片滑鼠拖曳。
-2. 行動裝置觸控拖曳。
-3. 使用 Pointer Events 統一滑鼠與觸控。
-4. SVG 曲線紅線隨卡片即時移動。
-5. 點擊卡片展開或收合直接關聯節點。
-6. 人物、代號、事件、物品分類篩選。
-7. 選中卡片及直接關聯高亮。
-8. 非關聯卡片與紅線淡化。
-9. 右側卷宗欄顯示短版情報摘要。
-10. 側欄列出直接關聯線索。
-11. 點擊側欄關聯可跳到另一張卡片。
-12. 重置佈局。
-13. 鍵盤 Enter／Space 操作。
-14. `prefers-reduced-motion` 支援。
-15. `forced-colors` 支援。
-16. 桌面、平板和手機響應式版面。
-17. 不依賴任何外部圖片、字體或 JavaScript 套件。
+1. 卡片拖曳（滑鼠與觸控，統一使用 Pointer Events 與 pointer capture）。
+2. SVG 曲線紅線隨卡片即時移動。
+3. 點擊卡片展開或收合直接關聯節點。
+4. 人物、代號、事件、物品分類篩選。
+5. 選中卡片及直接關聯高亮；非關聯卡片與紅線淡化。
+6. 右側卷宗欄顯示短版情報摘要與直接關聯線索；點擊關聯可跳到另一張卡片。
+7. 重置佈局。
+8. 鍵盤 Enter／Space 操作。
+9. `prefers-reduced-motion` 與 `forced-colors` 支援。
+10. 桌面、平板與手機響應式版面。
+11. 不依賴任何外部圖片、字型或 JavaScript 套件。
+12. 第二層詳細情報：側欄內就地展開，含身分、別名、組織、時間線、人物關係、相關物品、已確認／未確認情報與來源連結。
+13. 詳細情報的 `targetId` 關聯 chip 與「直接關聯線索」共用同一跳轉。
+14. 19 筆線索均配置自行繪製、離線內嵌的原創 Noir SVG（`cardArt`）。
+15. Supabase `ARCHIVE ACCESS` 瀏覽計數器為 fail-silent 線上增強；離線、逾時或 RPC 失敗時證據板核心功能仍正常。
 
-## 四、目前資料模型
+## 四、目前資料狀態
 
 每筆線索格式：
 
@@ -91,150 +68,53 @@ black-org-evidence-board.html
 }
 ```
 
-目前類型：
+可用類型：`person`、`code`、`event`、`item`。
+
+目前共 **19 筆資料、19 個唯一 ID**：
 
 ```text
-person
-code
-event
-item
+p1, c1, c2, c3, c4, p4, p5, p6, p7, p8, p9, p10, p11, p2, p3, e1, e2, i1, i2
 ```
 
-目前共 **19 筆資料、19 個唯一 ID**（已新增羽田浩司 `p11`）。
-
-修改資料時，必須同步更新：
+修改資料時必須同步三份：
 
 ```text
-script.js 內的 evidenceData
+script.js 的 evidenceData
 data.json
 black-org-evidence-data.json
 ```
 
-若資料筆數改變，也要更新 `index.html` 中目前寫死的：
+若資料筆數改變，也要更新 `index.html` 中硬編碼的總數（目前為 `/ 19 線索`）。兩份 JSON 按 `id` 比較內容相同，但頂層陣列順序不同（`p11` 位置不同）；後續驗證應以 ID map 比對，不要用 raw array equality 判定同步結果。
 
-```html
-/ 18 線索
-```
+## 五、詳細情報資料模型
 
-## 五、目前使用者的新需求
+完整策展情報儲存於 `script.js` 的 `evidenceDetails`（以穩定 ID 為鍵），與短版 `description` 分層。`emptyDetails()` 先為每個節點建立完整空骨架，再由 19 筆已策展資料覆寫；未來新增或缺資料的節點仍會使用此骨架作為 fallback，UI 對空欄位不渲染，全部為空時顯示 `DETAILS_PLACEHOLDER`（`（待補，等待情報材料）`）。
 
-使用者認為現在側欄中的短版「情報摘要」長度很好，希望保留。
-
-但希望增加第二層詳細情報：
-
-1. 點擊卡片後，側欄仍先顯示短摘要。
-2. 在摘要下方增加「展開完整情報」之類的按鈕。
-3. 點擊後顯示更完整的：
-   - 身分背景
-   - 別名
-   - 所屬組織
-   - 時間線
-   - 重要事件
-   - 人物關係
-   - 相關物品
-   - 已確認情報
-   - 尚未確認或有爭議的情報
-   - 資料來源
-4. 詳細內容可以用：
-   - 側欄內展開
-   - 大型 modal
-   - 第二層情報抽屜
-   - 獨立詳細頁面
-5. 使用者尚未決定最終 UI 方案，也尚未提供完整詳細材料。
-
-## 六、詳細情報來源候選
-
-使用者提出以下三個網站：
+每筆 details 欄位：
 
 ```text
-https://conan-zukai.com/
-https://www.detectiveconanworld.com/
-https://www.conanpedia.com/
+identity        身分背景（字串）
+aliases         別名清單（字串陣列）
+affiliations    所屬組織／陣營（字串陣列）
+timeline        [{ label, content, targetId? }]  targetId 可選：內容後附可點關聯 chip
+relationships   [{ targetId, summary }]
+relatedItems    相關物品（純字串、節點 ID，或 { name, targetId }）
+confirmedFacts  已確認情報（字串陣列）
+unconfirmed     尚未確認或有爭議情報（字串陣列）
+sources         [{ site, title, url }]
 ```
 
-### 目前研究狀態
+連結規則：
 
-- `conan-zukai.com` 經 WebFetch 存取時回傳 HTTP 403。
-- 另外兩個網站的讀取操作被使用者中途取消。
-- 因此三站的頁面結構、授權、可否嵌入及固定條目 URL 尚未完成研究。
+- 既有卡片的引用必須使用穩定 `targetId`，不依名稱猜測。
+- 無獨立卡片的人物（如 Amanda Hughes）以純文字呈現，不建立連結。
+- `confirmedFacts` 與 `unconfirmed` 必須分流；矛盾或未證實內容不得寫成已確認事實。
+- 來源使用 `{ site, title, url }`；整理改寫為繁體中文，不大量複製第三方百科原文，不自行補寫劇情。
+- 外部文字以 DOM API 與 `textContent` 安全插入，不直接寫入 `innerHTML`。
 
-### 接手模型應注意
+19 筆詳細情報均已策展完成，來源主要為 Detective Conan Wiki（Timeline）。
 
-不建議直接在瀏覽器端即時爬取這些網站，原因包括：
-
-- CORS
-- HTTP 403
-- 網站結構變動
-- 著作權與轉載規則
-- 網路中斷會破壞離線功能
-- 外部網站可能不允許 iframe
-- 詳細內容可能包含漫畫進度劇透或未確認推測
-
-較穩定的方向是：
-
-> **在本地資料中儲存自行整理、改寫的詳細情報，再附上來源網站與原始條目連結。**
-
-也就是「本地策展內容＋外部來源連結」的混合方案。
-
-避免大段直接複製第三方百科文字；應整理、改寫並標註來源。
-
-## 七、建議的詳細資料結構
-
-可將每筆資料擴充為：
-
-```json
-{
-  "id": "p1",
-  "type": "person",
-  "name": "烏丸蓮耶",
-  "description": "目前側欄顯示的短摘要",
-  "connections": ["e1", "i1", "c1", "c4", "p6"],
-  "details": {
-    "identity": "完整身分背景",
-    "aliases": [],
-    "affiliations": [],
-    "timeline": [
-      {
-        "label": "時間或篇章",
-        "content": "發生事項"
-      }
-    ],
-    "relationships": [
-      {
-        "targetId": "c1",
-        "summary": "與朗姆的詳細關係"
-      }
-    ],
-    "relatedItems": [],
-    "confirmedFacts": [],
-    "unconfirmed": [],
-    "sources": [
-      {
-        "site": "Conanpedia",
-        "title": "條目名稱",
-        "url": "https://..."
-      }
-    ]
-  }
-}
-```
-
-如要避免 `data.json` 過度膨脹，也可拆成：
-
-```text
-data.json
-details/
-  p1.json
-  c1.json
-  c2.json
-```
-
-但拆成外部 JSON 後，直接使用 `file://` 讀取會遇到 CORS，因此如果必須繼續「雙擊即玩」，詳細資料仍應：
-
-- 內嵌於 `script.js`；或
-- 放在另一個普通 JavaScript 檔案，例如 `details-data.js`，使用全域常數載入。
-
-## 八、目前關係資料的主要分群
+## 六、關係資料的主要分群
 
 ### 1. 組織首領與藥物研究
 
@@ -269,7 +149,7 @@ details/
 └─ 苦艾酒
 ```
 
-### 4. FBI與公安
+### 4. FBI 與公安
 
 ```text
 赤井秀一
@@ -299,244 +179,80 @@ details/
 └─ 角行棋子
 ```
 
-## 九、目前資料中值得補強的關係
+## 七、尚待使用者確認的決策
 
-以下人物已在摘要中提及，但目前沒有建立直接連線：
-
-1. 朗姆 `c1` → 工藤新一／柯南 `p4`
-2. 伏特加 `c3` → 朗姆 `c1`
-3. 安室透 `p9` → 赤井秀一 `p8`
-4. 琴酒 `c2` → 宮野志保 `p5`
-5. APTX 4869 `i1` → 烏丸蓮耶 `p1`
-
-最後一項目前只有：
+以下候選人物是否建立獨立卡片（未確認前不自動新增）：
 
 ```text
-烏丸蓮耶 → APTX 4869
+Amanda Hughes（阿曼達·休斯）
+工藤優作
+赤井務武
+赤井瑪麗（Mary Sera）
+卡邁爾（Kamel）
+基安蒂／科倫（狙擊手）
 ```
 
-但缺少反向：
+以下候選關係是否加入 `connections`（未確認前不自動新增；加入時應盡量雙向並同步三份資料）：
 
 ```text
-APTX 4869 → 烏丸蓮耶
+1. 朗姆（c1）→ 工藤新一／柯南（p4）
+2. 伏特加（c3）→ 朗姆（c1）
+3. 安室透（p9）→ 赤井秀一（p8）
+4. 琴酒（c2）→ 宮野志保（p5）
 ```
 
-關係是否新增，應由使用者確認，不要自動修改。
+`APTX 4869（i1）↔ 烏丸蓮耶（p1）` 的雙向連線已存在，不再列為待補。
 
-## 十、建議優先新增的卡片
+## 八、Supabase 與部署狀態
 
-這些主題在現有摘要中已經出現，但尚未成為獨立卡片。
+- repo 內有 `supabase/counter.sql` 與 `supabase/README.md`，但 repository 內容無法證明共享 Supabase 專案已實際套用 migration。
+- 沒有外部查詢或部署紀錄時，狀態應標示為未驗證；只能說 migration 檔已備妥，不可宣稱資料庫部署完成。
+- `ARCHIVE ACCESS` 計數器是 optional、fail-silent 的線上增強；離線、逾時或 RPC 失敗不得影響證據板核心功能。
+- 公開網址與 slug 見 `README.md`；該資訊為記錄用途，不代表 repository 可證明外部站點目前在線或 migration 已套用。
 
-### 第一優先
+## 九、驗證
 
-#### 羽田浩司
-
-可連接：
-
-```text
-羽田浩司命案
-若狹留美
-黑田兵衛
-朗姆
-赤井秀一
-角行棋子
-阿曼達·休斯
-```
-
-#### 阿曼達·休斯
-
-可連接：
-
-```text
-羽田浩司
-若狹留美／淺香
-朗姆
-黑田兵衛
-羽田浩司命案
-```
-
-#### 銀色子彈研究
-
-可連接：
-
-```text
-宮野厚司、宮野艾蓮娜
-宮野志保
-APTX 4869
-藥物計畫啟動
-烏丸蓮耶
-```
-
-注意應區分：
-
-- 宮野夫婦研究的「銀色子彈」
-- 赤井秀一／柯南被稱為「銀色子彈」
-
-#### 十億元搶劫案
-
-可連接：
-
-```text
-宮野明美
-琴酒
-宮野志保
-赤井秀一
-工藤新一／柯南
-```
-
-#### ASACA RUM 臨終訊息
-
-可連接：
-
-```text
-羽田浩司
-羽田浩司命案
-朗姆
-若狹留美
-烏丸蓮耶
-```
-
-### 第二優先
-
-```text
-毛利蘭
-毛利小五郎
-卡邁爾
-諸伏高明
-阿笠博士
-```
-
-## 十一、使用者稍後可能提供的材料格式
-
-使用者表示會先蒐集詳細情報，再輸入給模型。
-
-接手模型應允許使用者直接貼：
-
-- 網址
-- 原始摘錄
-- 零散筆記
-- 不同網站互相矛盾的內容
-- 未整理的角色關係
-- 集數／漫畫話數
-- 日文、英文或繁體中文材料
-
-模型再負責：
-
-1. 合併重複資料。
-2. 改寫為繁體中文。
-3. 區分官方已確認內容與推測。
-4. 區分漫畫、動畫、劇場版或其他媒體設定。
-5. 整理時間線。
-6. 建立人物關係。
-7. 加入來源標註。
-8. 轉換為網站 JSON 格式。
-9. 保留簡短摘要，另外建立完整情報。
-
-建議使用者提供材料時使用：
-
-```text
-主題：
-資料來源：
-網址：
-原始摘錄或筆記：
-與哪些人物／物品有關：
-尚未確認或有爭議的內容：
-```
-
-## 十二、尚未執行的工作
-
-1. ✅ 已選定詳細情報 UI：採「側欄內就地展開」。
-2. ✅ 已加入 `details` 資料模型（`evidenceDetails` + `emptyDetails()` + `getDetails()`）。
-3. ✅ 已加入「展開完整情報」按鈕（`.details-toggle` + `aria-expanded` + 鍵盤可操作）。
-4. 採側欄內展開，未另做 modal／抽屜／獨立頁。
-5. ✅ 已加入來源連結區（`buildSourcesSection`，`rel="noopener noreferrer"`，`href`／`title` 經屬性與 textContent 安全插入）。
-6. 尚未研究三個外部網站的固定條目 URL。
-7. 尚未取得使用者的完整情報材料——目前 19 筆 details 皆為空骨架待補，UI 會顯示「待補，等待情報材料」。
-8. ✅ 已新增羽田浩司 `p11`（同步進 script.js、data.json、black-org-evidence-data.json，並更新 index.html 計數為 19、重新產生 board）。
-9. handoff 第九節列出的關係補強候選中，已隨 p11 同步新增的部分：APTX 4869→烏丸蓮耶（反向）、朗姆→羽田浩司、羽田浩司→各相關節點。其餘候選（朗姆↔柯南、伏特加↔朗姆、安室↔赤井、琴酒↔宮野志保）尚未加入，仍待使用者確認。
-
-## 十二之一、詳細情報資料模型與填寫方式
-
-`script.js` 中 `evidenceDetails` 為以 ID 為鍵的物件，每筆預設為 `emptyDetails()`（全空）。
-提供材料時，對該 ID 寫入：
-
-```js
-evidenceDetails.p11 = {
-  identity: "天才將棋棋手…",
-  aliases: ["羽田浩司"],
-  affiliations: [],
-  timeline: [{ label: "17年前", content: "在美國遇害" }],
-  relationships: [{ targetId: "c1", summary: "遭其以藥物殺害" }],
-  relatedItems: ["i2"],
-  confirmedFacts: ["已確認死亡"],
-  unconfirmed: ["臨終訊息確切拼法仍有爭議"],
-  sources: [{ site: "Conanpedia", title: "羽田浩司", url: "https://..." }]
-};
-```
-
-`getDetails()` 會把部分填寫的物件合併至完整骨架，缺空欄位不會讓 UI 崩潰。
-任何空陣列／空字串欄位對應的區塊不會渲染。全部為空時顯示 `（待補，等待情報材料）`。
-絕不自行編造劇情；待使用者提供材料後再填入真實內容，並附來源、避免大量複製第三方百科原文。
-
-## 十三、驗證狀態
-
-已完成：
+JavaScript 語法：
 
 ```bash
-node --check script.js      # OK
-node --check （內嵌板 JS）  # OK
-python3 JSON 驗證            # data.json、black-org-evidence-data.json 皆 19 筆、無重複、無斷線、型別合法
-本地 HTTP 200               # 六個檔案皆 200
+node --check script.js
 ```
 
-資料驗證結果：
+JSON 與 connection targets（CLAUDE.md 腳本）：
 
-```text
-18 records
-18 unique IDs
-missing connections: none
-invalid types: none
+```bash
+python3 - <<'PY'
+import json
+from pathlib import Path
+items = json.loads(Path("data.json").read_text())
+ids = {item["id"] for item in items}
+missing = sorted({target for item in items for target in item["connections"] if target not in ids})
+assert len(ids) == len(items), "duplicate evidence IDs"
+assert not missing, f"missing connection targets: {missing}"
+assert all(item["type"] in {"person", "code", "event", "item"} for item in items)
+print(f"validated {len(items)} evidence records")
+PY
 ```
 
-所有主要檔案經本地 HTTP 伺服器回傳 `200`。
+資料變更時另以 ID map 比較兩份 JSON，並核對 `script.js` 的 embedded `evidenceData`；不要只比較 raw array equality。
 
-自動化瀏覽器互動測試未完成，原因：
+重建單檔版：
 
-- Safari 未啟用 Allow Remote Automation。
-- 外部 Playwright 套件下載受到權限阻擋。
-
-因此後續若修改 UI，仍需實際在瀏覽器確認：
-
-- 卡片拖曳
-- 點擊與拖曳是否互相衝突
-- 節點展開／收合
-- 分類篩選
-- 側欄滾動
-- 詳細情報展開
-- 手機版高度與 overflow
-- 鍵盤操作
-
-## 十四、可直接交給下一個模型的任務描述
-
-```text
-請接手以下專案：
-
-/Users/hpchang/Documents/claude/MyProjects/black_organization_of_conan
-
-先閱讀 CLAUDE.md、HANDOFF.md、README.md、index.html、styles.css、script.js 與 data.json。
-
-這是一個可直接使用 file:// 離線開啟的《名偵探柯南》黑衣組織互動式證據板。現有側欄會顯示短版情報摘要，使用者希望保留摘要長度，未來再增加可點擊展開的完整情報。
-
-完整情報預計包含身分、別名、時間線、人物關係、相關物品、已確認情報、未確認內容及來源。資料來源候選為 conan-zukai.com、detectiveconanworld.com 和 conanpedia.com，但網站研究尚未完成，使用者也尚未提供詳細材料。
-
-目前不要自行增加或改寫劇情資料。先等待使用者提供情報材料，或協助使用者選擇詳細情報 UI 方案。
-
-修改時必須維持：
-1. 雙擊 index.html 即可離線使用。
-2. 不依賴執行時 fetch。
-3. script.js、data.json、black-org-evidence-data.json 資料同步。
-4. black-org-evidence-board.html 是產生檔，不可單獨修改。
-5. 使用 DOM textContent 插入外部資料。
-6. 維持滑鼠、觸控與鍵盤操作。
-7. 詳細情報需附來源，但不要直接大量複製第三方網站內容。
+```bash
+python3 tools/build_standalone.py
 ```
+
+UI 或互動變更時，依影響路徑實測：卡片拖曳、Enter／Space 選取、詳細情報展開／收合、分類篩選、側欄關係導覽、reset、`file://` 離線開啟。
+
+自動化瀏覽器互動測試尚未完成（Safari 未啟用 Allow Remote Automation、外部 Playwright 套件下載受權限阻擋）；若修改 UI，仍需在瀏覽器實測上述路徑。
+
+## 十、交接守則
+
+1. 不直接編輯 `black-org-evidence-board.html`；改 source 後用 `tools/build_standalone.py` 重建。
+2. 不新增 runtime data fetch 或破壞 `file://` 的依賴。
+3. 不自行建立未確認的人物卡片或關係。
+4. 不把推測寫成已確認情報，也不大量複製第三方原文。
+5. 不把 `supabase/counter.sql` 存在 repo 解讀為 migration 已部署。
+6. 不把 JSON 頂層陣列順序差異誤判為資料內容不同。
+7. 不刪除 `emptyDetails()`、`DETAILS_PLACEHOLDER` 或 `getDetails()` 的 fallback 行為。
+8. 不自動 commit 或 push；只有使用者明確要求時才進行。

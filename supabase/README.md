@@ -2,7 +2,11 @@
 
 本目錄提供 `ARCHIVE ACCESS` 瀏覽計數器的資料庫設定。前端使用既有共享 Supabase 專案的 publishable key，頁面 slug 為 `black-org-evidence-board`。
 
+> Repository 內存在 `counter.sql` 只代表 migration 檔已備妥，不代表共享 Supabase 專案已實際套用。是否已套用需於外部專案（SQL Editor 查詢或儀表板）驗證；沒有外部查詢結果時，狀態應標示為未驗證。
+
 ## 套用方式
+
+若決定啟用計數器且具有目標共享 Supabase 專案權限，才執行以下步驟：
 
 1. 登入既有共享 Supabase 專案。
 2. 開啟 **SQL Editor → New query**。
@@ -29,4 +33,4 @@ select * from public.page_hits where slug = 'black-org-evidence-board';
 
 ## 前端失敗行為
 
-Supabase 尚未套用 SQL、無網路、被瀏覽器阻擋或超過 8 秒時，頁面會靜默隱藏計數器，證據板仍可正常離線使用。
+若 Supabase 尚未套用 SQL、無網路、被瀏覽器阻擋或請求超過 8 秒，頁面會靜默隱藏計數器，證據板仍可正常離線使用。此為容錯設計，非對外部 migration 狀態的宣稱。
