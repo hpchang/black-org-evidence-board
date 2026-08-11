@@ -74,10 +74,6 @@
             <span class="hud-label">目前視野</span>
             <strong id="visible-count">5</strong><span class="hud-unit"> / 19 線索</span>
           </div>
-          <div id="hits-line" class="hud-metric archive-access" hidden>
-            <span class="hud-label">ARCHIVE ACCESS</span>
-            <strong id="hits">—</strong>
-          </div>
         </div>
         <div class="hud-view-controls" role="group" aria-label="視野模式">
           <button class="view-mode-btn active" type="button" data-view-mode="local" aria-pressed="true">局部網絡</button>
@@ -110,10 +106,15 @@
 
       <footer class="sidebar-footer">
         <span>CONFIDENTIAL-4869</span>
+        <span id="hits-line" class="archive-access" hidden>
+          訪客計數 <strong id="hits">—</strong>
+        </span>
         <span id="record-clock">SYS / OFFLINE</span>
       </footer>
     </aside>
   </div>
+
+  <div id="interaction-status" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true"></div>
 
   <script src="script.js"></script>
 </body>

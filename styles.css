@@ -55,9 +55,24 @@ input {
   font: inherit;
 }
 
+/* P1-D：live region 僅供輔助科技，視覺隱藏但可被 screen reader 讀取 */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 button:focus-visible,
 .node-card:focus-visible,
-.relation-item:focus-visible {
+.relation-item:focus-visible,
+.detail-name:focus-visible {
   outline: 2px solid #ffffff;
   outline-offset: 3px;
 }
@@ -718,6 +733,23 @@ button:focus-visible,
   font-family: var(--font-mono);
   font-size: 1.2rem;
   letter-spacing: 0.04em;
+}
+
+/* P1-H：counter 降級至 sidebar footer，為網站訪客計數，不影響主版面 */
+.sidebar-footer .archive-access {
+  font-family: var(--font-mono);
+  font-size: 0.57rem;
+  letter-spacing: 0.04em;
+  color: #62636a;
+}
+
+.sidebar-footer .archive-access[hidden] {
+  display: none;
+}
+
+.sidebar-footer .archive-access strong {
+  color: #b9b6ae;
+  font-size: inherit;
 }
 
 .hud-unit,
@@ -1657,11 +1689,6 @@ button:focus-visible,
 
   .board-hud strong {
     font-size: 1.1rem;
-  }
-
-  /* ARCHIVE ACCESS 在手機移出主 HUD，避免改變 board 高度 */
-  #hits-line {
-    display: none !important;
   }
 
   .view-mode-btn {

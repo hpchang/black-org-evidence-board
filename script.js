@@ -975,6 +975,20 @@ const svgLayer = document.getElementById("connections-svg");
 const sidebarContent = document.getElementById("sidebar-content");
 const boardWrapper = document.getElementById("board-wrapper");
 const visibleCount = document.getElementById("visible-count");
+const interactionStatus = document.getElementById("interaction-status");
+
+// P1-D：對 live region 發送公告。避免連續 pointermove/resize 觸發。
+let announceTimer = null;
+function announce(message) {
+  if (!interactionStatus || !message) return;
+  // 先清空再寫入，確保同一則訊息也能被重複公告。
+  interactionStatus.textContent = "";
+  if (announceTimer !== null) window.clearTimeout(announceTimer);
+  announceTimer = window.setTimeout(() => {
+    interactionStatus.textContent = message;
+    announceTimer = null;
+  }, 60);
+}
 
 function clonePositions(source) {
   return Object.fromEntries(
@@ -1147,6 +1161,8 @@ function setViewMode(mode, { skipRender = false } = {}) {
   }
 
   if (!skipRender) renderBoard({ preserve: false });
+  const rendered = pinboard.querySelectorAll(".node-card").length;
+  announce(`已切換至${mode === "all" ? "全圖" : "局部網絡"}，顯示 ${rendered} 筆線索。`);
 }
 
 function setupViewMode() {
@@ -1315,7 +1331,19 @@ function createNodeCard(node) {
   selectAction.setAttribute("aria-pressed", String(activeNodeId === node.id));
   selectAction.setAttribute("aria-controls", "case-file-sidebar");
   selectAction.setAttribute("aria-expanded", String(expandedNodeIds.has(node.id)));
+  // P1-E：pointer 選取不搶焦點（靠 live region 公告）；鍵盤 Enter/Space 選取後
+  // 將焦點移到 record name，方便輔助科技朗讀卷宗起點。攔截鍵盤事件避免重複觸發 click。
   selectAction.addEventListener("click", () => selectNode(node));
+  selectAction.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    selectNode(node);
+    window.requestAnimationFrame(() => {
+      document.getElementById(`record-name-${node.id}`)?.focus({ preventScroll: true });
+    });
+  });
+  // 為 record name 建立可聚焦點（h2 預設不可聚焦）。
+  // tabindex 由 populateSidebar 建立元素時設定。
 
   const dragHandle = document.createElement("button");
   dragHandle.type = "button";
@@ -1483,6 +1511,7 @@ function selectNode(node) {
   renderBoard({ preserve: false });
   populateSidebar(node);
   setSidebarSheetState("expanded");
+  announce(`已選取${node.name}，類型為${TYPE_LABELS[node.type]}，顯示 ${node.connections.length} 個直接關聯。`);
 }
 
 function drawConnections() {
@@ -1592,8 +1621,11 @@ function populateSidebar(node) {
   recordId.className = "detail-record-id";
   recordId.textContent = `RECORD ${node.id.toUpperCase().padStart(4, "0")}`;
 
-  const name = document.createElement("h1");
+  // P1-B：頁面只有一個穩定 h1（BLACK ORGANIZATION）；動態 record name 為 h2。
+  const name = document.createElement("h2");
   name.className = "detail-name";
+  name.id = `record-name-${node.id}`;
+  name.tabIndex = -1;
   name.textContent = node.name;
 
   const descriptionBlock = document.createElement("section");
@@ -1637,7 +1669,11 @@ function populateSidebar(node) {
   backToBoard.setAttribute("aria-label", "收合卷宗回到證據板");
   backToBoard.addEventListener("click", () => {
     setSidebarSheetState("collapsed");
-    // 保留 activeNodeId；只收合 sheet，讓使用者回到板面操作。
+    // P1-E：回到板面後，焦點回到該 active card 的 select control。
+    window.requestAnimationFrame(() => {
+      const activeCard = activeNodeId ? document.getElementById(`node-${activeNodeId}`) : null;
+      activeCard?.querySelector(".card-select-action")?.focus({ preventScroll: true });
+    });
   });
 
   const art = createDetailArt(node.id);
@@ -1647,11 +1683,15 @@ function populateSidebar(node) {
   relationsHeading.append(relationsTitle, relationsCount);
   relations.append(relationsHeading, relationsList, backToBoard);
 
-  // P0-F：DOM 順序 = 分類 → 名稱 → 摘要 → 關聯數/CTA → 回到板面 → 完整情報 → 大圖。
-  // 手機首屏先看到下一步；大型 hero 移到最後（CSS 另外限高）。
-  detail.append(classification, name, descriptionBlock, relations, createDetailsDisclosure(node));
+  // P1-A：DOM 順序 = 分類 → 名稱 → 摘要 → 關聯數/CTA → 回到板面 → 精簡圖 → 完整情報。
+  // 手機首屏先看到下一步；大圖在關聯之後、disclosure 之前，並由 CSS 限高。
+  detail.append(classification, name, descriptionBlock, relations);
   if (art) detail.append(art);
+  detail.append(createDetailsDisclosure(node));
   sidebarContent.replaceChildren(detail);
+
+  // P1-E：鍵盤選取後焦點移到 record name，方便輔助科技朗讀卷宗起點。
+  // （pointer 選取不搶焦點；此處只在明確鍵盤流程呼叫，見 selectNode 呼叫端。）
 }
 
 // ── 卡片插畫：本地提案圖片，載入失敗時退回原創 Noir SVG ──────────────
@@ -1708,6 +1748,8 @@ function createDetailArt(nodeId) {
 }
 
 // ── 第二層詳細情報：可收合展開區 ───────────────────────────────────
+// P1-G：明確產品決策——每次 sidebar 重建後 disclosure 預設關閉，不保存各 node 的開合狀態。
+// 維持一致行為：選取新卷宗即收合完整情報，避免使用者誤以為舊狀態延續。
 function createDetailsDisclosure(node) {
   const wrapper = document.createElement("div");
   wrapper.className = "details-disclosure";
@@ -1796,7 +1838,8 @@ function buildDetailSection(label, items, isUnconfirmed = false) {
   section.className = "details-section";
   if (isUnconfirmed) section.dataset.variant = "unconfirmed";
 
-  const heading = document.createElement("span");
+  // P1-B：details section heading 為 h3，建立 h1→h2(record)→h3 階層。
+  const heading = document.createElement("h3");
   heading.className = "details-label";
   heading.textContent = label;
 
@@ -1818,7 +1861,8 @@ function buildTimelineSection(label, entries) {
   const section = document.createElement("section");
   section.className = "details-section";
 
-  const heading = document.createElement("span");
+  // P1-B：details section heading 為 h3。
+  const heading = document.createElement("h3");
   heading.className = "details-label";
   heading.textContent = label;
 
@@ -1871,7 +1915,8 @@ function buildRelatedItemsSection(label, items) {
   const section = document.createElement("section");
   section.className = "details-section";
 
-  const heading = document.createElement("span");
+  // P1-B：details section heading 為 h3。
+  const heading = document.createElement("h3");
   heading.className = "details-label";
   heading.textContent = label;
 
@@ -1913,7 +1958,8 @@ function buildRelationshipSection(label, node, relationships) {
   const section = document.createElement("section");
   section.className = "details-section";
 
-  const heading = document.createElement("span");
+  // P1-B：details section heading 為 h3。
+  const heading = document.createElement("h3");
   heading.className = "details-label";
   heading.textContent = label;
 
@@ -1943,7 +1989,8 @@ function buildSourcesSection(label, sources) {
   const section = document.createElement("section");
   section.className = "details-section";
 
-  const heading = document.createElement("span");
+  // P1-B：details section heading 為 h3。
+  const heading = document.createElement("h3");
   heading.className = "details-label";
   heading.textContent = label;
 
@@ -2044,6 +2091,7 @@ function handleRelationClick(nodeId) {
     const selectAction = card.querySelector(".card-select-action");
     selectAction?.focus({ preventScroll: true });
   });
+  announce(`已定位至${node.name}，卷宗已更新。`);
 }
 
 // P0-D：只調整 boardWrapper 內部 scroll，不用未限制的 scrollIntoView（會牽動 body）。
@@ -2115,11 +2163,15 @@ function setupFilters() {
 
       const activeNode = activeNodeId ? getNode(activeNodeId) : null;
       if (activeNode && filter !== "all" && activeNode.type !== filter) {
+        // P1-F：filter 隱藏 active node 時，清除 active 並公告原因。
         activeNodeId = null;
         resetSidebar();
+        announce(`目前篩選為${TYPE_LABELS[filter]}，已清除選取的線索。`);
       }
 
       renderBoard();
+      const count = pinboard.querySelectorAll(".node-card").length;
+      announce(`顯示 ${count} 筆${filter === "all" ? "全部" : TYPE_LABELS[filter]}線索。`);
     });
   });
 }
@@ -2154,6 +2206,7 @@ function setupResetLayout() {
     resetSidebar();
     renderBoard({ preserve: false });
     boardWrapper.scrollTo(getInitialBoardScroll());
+    announce("已重置整個視圖。");
   });
 }
 
