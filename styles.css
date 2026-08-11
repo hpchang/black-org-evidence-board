@@ -441,7 +441,7 @@ button:focus-visible,
   stroke: var(--signal-red-hot);
   stroke-width: 4px;
   opacity: 1;
-  filter: drop-shadow(0 0 5px rgba(239, 52, 59, 0.48));
+  filter: drop-shadow(0 0 6px rgba(239, 52, 59, 0.55));
 }
 
 .connection-line.dimmed-connection,
@@ -564,9 +564,9 @@ button:focus-visible,
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  color: #6d665b;
+  color: #5a534a;
   font-family: var(--font-mono);
-  font-size: 0.59rem;
+  font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -576,6 +576,8 @@ button:focus-visible,
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  color: var(--type-color);
+  font-weight: 800;
 }
 
 .card-type::before {
@@ -660,19 +662,26 @@ button:focus-visible,
   gap: 8px;
   padding-top: 7px;
   border-top: 1px dashed rgba(37, 34, 30, 0.28);
-  color: #6d665b;
+  color: #5a534a;
   font-family: var(--font-mono);
-  font-size: 0.56rem;
+  font-size: 0.6rem;
+  font-weight: 700;
   letter-spacing: 0.04em;
 }
 
 .expand-status {
   color: #5e574d;
+  font-weight: 800;
 }
 
-.node-card[aria-expanded="true"] .expand-status {
+/* P2-A：展開狀態以紅色 signal 強調；selector 改為 card 上的展開狀態（經由 select action）。 */
+.node-card:has(.card-select-action[aria-expanded="true"]) .expand-status {
   color: #97151a;
   font-weight: 900;
+}
+
+.node-card.active-card .expand-status {
+  color: var(--signal-red-hot);
 }
 
 .board-hud {
@@ -1615,7 +1624,8 @@ button:focus-visible,
      sheet 高度由 data-sheet-state 控制；board 占滿剩餘空間。 */
   #app {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: var(--header-height) minmax(0, 1fr) auto;
+    /* P2-D：header row 用 auto，文字放大 200% 時 header 可長高而不截斷內容 */
+    grid-template-rows: auto minmax(0, 1fr) auto;
   }
 
   .brand-row h1 {
@@ -1623,6 +1633,7 @@ button:focus-visible,
   }
 
   .toolbar {
+    flex-wrap: wrap;
     align-items: stretch;
     gap: 8px;
   }
@@ -1701,6 +1712,15 @@ button:focus-visible,
   .pinboard {
     flex: 1 1 auto;
     min-height: 0;
+  }
+
+  /* P2-C：手機首屏降低裝飾性座標/印章，避免像隨機裁切殘留；維持為不干擾的 atmosphere layer */
+  .board-coordinate {
+    opacity: 0.5;
+  }
+
+  .board-stamp {
+    opacity: 0.18;
   }
 
   /* P0-E：bottom sheet（行內 grid row，避免 fixed overlay 座標問題） */
@@ -1820,16 +1840,35 @@ button:focus-visible,
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+
+  /* P2-D：reduced-motion 下 bottom sheet 不使用彈簧/滑動動畫，但仍可辨識狀態 */
+  .sidebar {
+    transition: none !important;
+  }
 }
 
 @media (forced-colors: active) {
+  /* P2-D：active/related/focus/CTA 不只靠顏色，補 border/outline */
   .node-card,
   .relation-item,
   .detail-desc-block,
   .details-toggle,
   .details-panel,
-  .relationship-chip {
+  .relationship-chip,
+  .card-drag-handle,
+  .view-mode-btn,
+  .back-to-board-btn {
     border: 1px solid CanvasText;
+  }
+
+  .node-card.active-card {
+    border: 3px solid CanvasText;
+    outline: 2px solid LinkText;
+    outline-offset: 2px;
+  }
+
+  .node-card.related-card {
+    border: 2px dashed CanvasText;
   }
 
   .relation-marker,
@@ -1838,5 +1877,10 @@ button:focus-visible,
   .details-list .details-item::before,
   .timeline-entry::before {
     forced-color-adjust: none;
+  }
+
+  /* 紙卡與板面在 forced-colors 下仍可辨識邊界 */
+  .pinboard {
+    border: 1px solid CanvasText;
   }
 }

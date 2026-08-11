@@ -48,10 +48,10 @@ supabase/counter.sql          ARCHIVE ACCESS 計數器 migration
 8. 鍵盤 Enter／Space 操作。
 9. `prefers-reduced-motion` 與 `forced-colors` 支援。
 10. 桌面、平板與手機響應式版面。
-11. 不依賴任何外部圖片、字型或 JavaScript 套件。
+11. 不依賴任何外部字型或 JavaScript 套件。本地 proposal image 為卡片／側欄主要圖像；原創 Noir SVG `cardArt` 為離線載入失敗時的 fallback。Proposal image 的正式部署權利需另行確認。
 12. 第二層詳細情報：側欄內就地展開，含身分、別名、組織、時間線、人物關係、相關物品、已確認／未確認情報與來源連結。
 13. 詳細情報的 `targetId` 關聯 chip 與「直接關聯線索」共用同一跳轉。
-14. 19 筆線索均配置自行繪製、離線內嵌的原創 Noir SVG（`cardArt`）。
+14. 19 筆線索均配置本地 proposal image（主要）與自行繪製、離線內嵌的原創 Noir SVG（`cardArt`，載入失敗 fallback）。
 15. Supabase `ARCHIVE ACCESS` 瀏覽計數器為 fail-silent 線上增強；離線、逾時或 RPC 失敗時證據板核心功能仍正常。
 
 ## 四、目前資料狀態

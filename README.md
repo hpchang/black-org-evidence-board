@@ -122,14 +122,15 @@ python3 tools/build_standalone.py
 
 是否加入由使用者確認；加入時應盡量雙向，並同步三份資料。
 
-### 三、卡片插畫素材（已採用內嵌 SVG）
+### 三、卡片插畫素材（本地 proposal image 為主，原創 Noir SVG 為 fallback）
 
-目前 19 筆線索均已配置自行繪製的原創 Noir 漫畫線稿：
+目前 19 筆線索的圖像流程：
 
-- 人物以髮型、輪廓與案件象徵物建立辨識度，不直接重製動畫／漫畫官方圖像。
+- 本地 proposal image（`assets/card-art/`）為卡片縮圖與側欄大圖的主要圖像；來源與版權狀態記錄於 `assets/card-art/SOURCES.json`。
+- 原創 Noir 漫畫線稿 `cardArt` 內嵌於 `script.js`，作為本地圖片載入失敗時的離線 fallback；人物以髮型、輪廓與案件象徵物建立辨識度，不直接重製動畫／漫畫官方圖像。
 - 組織代號、事件與物品使用酒器、實驗器材、案件現場與關鍵物證等符號構圖。
-- 同一份 `cardArt` SVG 同時用於證據板卡片縮圖與側欄大型插圖，避免維護兩套資產。
-- 插圖直接內嵌於 `script.js`，不加入資料 JSON，也不依賴外部圖片或字型；Supabase 計數器即使連線失敗，`file://` 核心功能仍可完整離線運作。
+- 兩套資產共用同一 `createArtFigure()` 流程：先載入本地圖片，`error` 時退回 SVG，確保 `file://` 與完全離線時核心功能仍可完整運作。
+- Proposal image 的正式部署權利需另行確認；未確認前可替換或清除為 SVG fallback。
 
 插圖統一採用 240×200 畫布、淺米色主線與深色背景，配合固定 1800×1240 證據畫布的 Noir 黑紅視覺系統。修改插圖後需重新產生 `black-org-evidence-board.html`。
 
