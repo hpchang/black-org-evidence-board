@@ -927,11 +927,41 @@ const INITIAL_POSITIONS = {
   i1: { x: 500, y: 355 }
 };
 
+// P0-A：mobile compact 起始座標。pinboard 仍是固定 1800×1240 邏輯畫布，
+// 但行動版初始把 5 張核心卡收攏到 ~360×520 內，390×844 首屏即可完整看見。
+const MOBILE_INITIAL_POSITIONS = {
+  p1: { x: 120, y: 70 },
+  c1: { x: 26, y: 250 },
+  c2: { x: 214, y: 250 },
+  p4: { x: 120, y: 430 },
+  i1: { x: 120, y: 320 }
+};
+
+const MOBILE_BREAKPOINT_QUERY = "(max-width: 620px)";
+
+function isMobileBoard() {
+  return window.matchMedia(MOBILE_BREAKPOINT_QUERY).matches;
+}
+
+// 各 layout 獨立保存位置與自動配置紀錄，避免 mobile 覆寫 desktop 已整理的位置。
+// `positions` 與 `autoPositionedNodeIds` 始終是當前 active layout map 的別名，
+// 既有 renderBoard / preserveRenderedPositions / clamp / seed / drag 不需改 signature。
+const positionsByLayout = {
+  desktop: clonePositions(INITIAL_POSITIONS),
+  mobile: clonePositions(MOBILE_INITIAL_POSITIONS)
+};
+const autoPositionedByLayout = {
+  desktop: new Set(),
+  mobile: new Set()
+};
+let activeLayoutKey = isMobileBoard() ? "mobile" : "desktop";
+let positions = positionsByLayout[activeLayoutKey];
+let autoPositionedNodeIds = autoPositionedByLayout[activeLayoutKey];
+
 let activeNodeId = null;
 let currentFilter = "all";
-let positions = clonePositions(INITIAL_POSITIONS);
+let viewMode = "local"; // P0-C：local | all
 const expandedNodeIds = new Set();
-const autoPositionedNodeIds = new Set();
 const CARD_EDGE_MARGIN = 18;
 const COUNTER_URL = "https://eaawlrtrxwyurcfnekat.supabase.co";
 const COUNTER_PUBLISHABLE_KEY = "sb_publishable_zS96EY5Uddhaq06hjt04sQ_E8WarUjc";
@@ -970,6 +1000,21 @@ function areConnected(firstId, secondId) {
 }
 
 function getVisibleNodeIds() {
+  // P0-C：visibility 規則為可測純邏輯，renderBoard／drawConnections／count 共用此結果。
+  if (viewMode === "all") {
+    return new Set(evidenceData.map((node) => node.id));
+  }
+
+  if (isMobileBoard()) {
+    // mobile local：未選取顯示 5 張核心卡；已選取只顯示 active + 一階關聯。
+    if (activeNodeId) {
+      const active = getNode(activeNodeId);
+      if (active) return new Set([active.id, ...active.connections]);
+    }
+    return new Set(CORE_NODE_IDS);
+  }
+
+  // desktop local：保留既有 core + expanded + active 探索能力。
   const visibleIds = new Set(CORE_NODE_IDS);
 
   expandedNodeIds.forEach((nodeId) => {
@@ -1037,18 +1082,23 @@ function initCounter() {
 }
 
 function init() {
-  renderBoard();
+  renderBoard({ preserve: false });
   setupFilters();
   setupResetLayout();
+  setupViewMode();
+  setupBoardPan();
+  setupSheetHandle();
   updateRecordClock();
   initCounter();
 
+  // P0-A：resize 跨越 620px breakpoint 時切換 layout map，避免 SVG 線與 clamp 錯畫布。
   window.addEventListener("resize", () => {
     if (resizeFrameId !== null) {
       window.cancelAnimationFrame(resizeFrameId);
     }
 
     resizeFrameId = window.requestAnimationFrame(() => {
+      handleLayoutSwitchIfNeeded();
       clampRenderedCards();
       drawConnections();
       resizeFrameId = null;
@@ -1057,12 +1107,56 @@ function init() {
   window.setInterval(updateRecordClock, 60000);
 
   window.requestAnimationFrame(() => {
-    boardWrapper.scrollTo({ left: 70, top: 24, behavior: "auto" });
+    boardWrapper.scrollTo(getInitialBoardScroll());
   });
 }
 
-function renderBoard() {
+function getInitialBoardScroll() {
+  // P0-A：desktop 沿用既有 offset；mobile 不繼承 desktop 座標，回到 compact 起始。
+  if (isMobileBoard()) {
+    return { left: MOBILE_INITIAL_POSITIONS.p1.x - 110, top: MOBILE_INITIAL_POSITIONS.p1.y - 30, behavior: "auto" };
+  }
+  return { left: 70, top: 24, behavior: "auto" };
+}
+
+// P0-A：切換 desktop/mobile 時，先把舊 layout 的拖曳位置保存進它自己的 map，
+// 再把別名指向新 layout 的 map，最後重新 render（不 preserve，以免把新 map 蓋成舊值）。
+function handleLayoutSwitchIfNeeded() {
+  const nextKey = isMobileBoard() ? "mobile" : "desktop";
+  if (nextKey === activeLayoutKey) return;
+
   preserveRenderedPositions();
+  activeLayoutKey = nextKey;
+  positions = positionsByLayout[activeLayoutKey];
+  autoPositionedNodeIds = autoPositionedByLayout[activeLayoutKey];
+  setViewMode(viewMode, { skipRender: true });
+  renderBoard({ preserve: false });
+}
+
+// P0-C：切換 view mode。進入 mobile local 時清掉 expanded（mobile 不用累積展開）。
+function setViewMode(mode, { skipRender = false } = {}) {
+  viewMode = mode;
+  document.querySelectorAll("[data-view-mode]").forEach((button) => {
+    const isActive = button.dataset.viewMode === mode;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  });
+
+  if (mode === "local" && isMobileBoard()) {
+    expandedNodeIds.clear();
+  }
+
+  if (!skipRender) renderBoard({ preserve: false });
+}
+
+function setupViewMode() {
+  document.querySelectorAll("[data-view-mode]").forEach((button) => {
+    button.addEventListener("click", () => setViewMode(button.dataset.viewMode));
+  });
+}
+
+function renderBoard({ preserve = true } = {}) {
+  if (preserve) preserveRenderedPositions();
   pinboard.querySelectorAll(".node-card").forEach((card) => card.remove());
 
   const visibleIds = getVisibleNodeIds();
@@ -1079,7 +1173,8 @@ function renderBoard() {
     pinboard.appendChild(createNodeCard(node));
   });
 
-  visibleCount.textContent = String(displayedNodes.length);
+  // P0-C：visible-count 必須反映實際 rendered card 數（filter 後），與板面一致。
+  visibleCount.textContent = String(pinboard.querySelectorAll(".node-card").length);
   resolveAutoPositionedCardOverlaps();
   clampRenderedCards();
   updateCardVisuals();
@@ -1173,10 +1268,6 @@ function createNodeCard(node) {
   card.className = "node-card";
   card.dataset.nodeId = node.id;
   card.dataset.type = node.type;
-  card.tabIndex = 0;
-  card.setAttribute("role", "button");
-  card.setAttribute("aria-label", `${node.name}，${TYPE_LABELS[node.type]}，點擊展開或收合關聯線索`);
-  card.setAttribute("aria-expanded", String(expandedNodeIds.has(node.id)));
   card.style.left = `${positions[node.id].x}px`;
   card.style.top = `${positions[node.id].y}px`;
   card.style.setProperty("--card-rotation", `${rotation}deg`);
@@ -1214,11 +1305,35 @@ function createNodeCard(node) {
   if (art) card.append(art);
   card.append(title, footer);
 
-  makeElementInteractive(card, node);
+  // P0-D：container 不再是 button。選取與拖曳由兩個 sibling button 分別承擔，
+  // 不巢狀、不互相遮蔽熱區。select overlay 在最下層、drag handle 在最上層。
+  const selectAction = document.createElement("button");
+  selectAction.type = "button";
+  selectAction.className = "card-select-action";
+  selectAction.dataset.nodeId = node.id;
+  selectAction.setAttribute("aria-label", `${node.name}，${TYPE_LABELS[node.type]}，${node.connections.length} 個直接關聯，點擊開啟卷宗`);
+  selectAction.setAttribute("aria-pressed", String(activeNodeId === node.id));
+  selectAction.setAttribute("aria-controls", "case-file-sidebar");
+  selectAction.setAttribute("aria-expanded", String(expandedNodeIds.has(node.id)));
+  selectAction.addEventListener("click", () => selectNode(node));
+
+  const dragHandle = document.createElement("button");
+  dragHandle.type = "button";
+  dragHandle.className = "card-drag-handle";
+  dragHandle.dataset.nodeId = node.id;
+  dragHandle.setAttribute("aria-label", `拖曳移動 ${node.name}`);
+  dragHandle.setAttribute("aria-keyshortcuts", "方向鍵:移動10px Shift+方向鍵:移動40px");
+  // 僅標示；keyboard 重排見 makeElementInteractive。
+
+  card.append(selectAction, dragHandle);
+
+  makeElementInteractive(card, node, dragHandle);
   return card;
 }
 
-function makeElementInteractive(card, node) {
+function makeElementInteractive(card, node, dragHandle) {
+  // P0-D：拖曳只綁在 drag handle 上。pointer capture／5px threshold／pointercancel／
+  // 拖曳即時 drawConnections 全數保留；pointerup 不再誤觸 select（select 由 overlay button 處理）。
   let pointerId = null;
   let startX = 0;
   let startY = 0;
@@ -1226,7 +1341,7 @@ function makeElementInteractive(card, node) {
   let startTop = 0;
   let hasMoved = false;
 
-  card.addEventListener("pointerdown", (event) => {
+  dragHandle.addEventListener("pointerdown", (event) => {
     if (event.pointerType === "mouse" && event.button !== 0) return;
 
     event.preventDefault();
@@ -1236,10 +1351,11 @@ function makeElementInteractive(card, node) {
     startLeft = card.offsetLeft;
     startTop = card.offsetTop;
     hasMoved = false;
-    card.setPointerCapture(pointerId);
+    dragHandle.setPointerCapture(pointerId);
+    card.classList.add("dragging");
   });
 
-  card.addEventListener("pointermove", (event) => {
+  dragHandle.addEventListener("pointermove", (event) => {
     if (event.pointerId !== pointerId) return;
 
     const deltaX = event.clientX - startX;
@@ -1248,7 +1364,6 @@ function makeElementInteractive(card, node) {
     if (!hasMoved && Math.hypot(deltaX, deltaY) < 5) return;
 
     hasMoved = true;
-    card.classList.add("dragging");
 
     const bounds = getCardPlacementBounds(card);
     const nextX = clamp(startLeft + deltaX, bounds.minX, bounds.maxX);
@@ -1262,29 +1377,47 @@ function makeElementInteractive(card, node) {
   const finishPointer = (event) => {
     if (event.pointerId !== pointerId) return;
 
-    if (card.hasPointerCapture(pointerId)) {
-      card.releasePointerCapture(pointerId);
+    if (dragHandle.hasPointerCapture(pointerId)) {
+      dragHandle.releasePointerCapture(pointerId);
     }
 
     card.classList.remove("dragging");
     pointerId = null;
-
-    if (!hasMoved) {
-      selectNode(node);
-    }
+    // 不在此 select；選取由 .card-select-action 處理。
   };
 
-  card.addEventListener("pointerup", finishPointer);
-  card.addEventListener("pointercancel", (event) => {
+  dragHandle.addEventListener("pointerup", finishPointer);
+  dragHandle.addEventListener("pointercancel", (event) => {
     if (event.pointerId !== pointerId) return;
+    if (dragHandle.hasPointerCapture(pointerId)) {
+      dragHandle.releasePointerCapture(pointerId);
+    }
     card.classList.remove("dragging");
     pointerId = null;
   });
 
-  card.addEventListener("keydown", (event) => {
-    if (event.key !== "Enter" && event.key !== " ") return;
+  // P0-D：handle 必須是有效 keyboard target，不可為 dead focus。
+  // 方向鍵 10px、Shift+方向鍵 40px 移動卡片並即時更新紅線。
+  dragHandle.addEventListener("keydown", (event) => {
+    const step = event.shiftKey ? 40 : 10;
+    let dx = 0;
+    let dy = 0;
+    switch (event.key) {
+      case "ArrowLeft": dx = -step; break;
+      case "ArrowRight": dx = step; break;
+      case "ArrowUp": dy = -step; break;
+      case "ArrowDown": dy = step; break;
+      default: return;
+    }
     event.preventDefault();
-    selectNode(node);
+    const bounds = getCardPlacementBounds(card);
+    autoPositionedNodeIds.delete(node.id);
+    setCardPosition(
+      card,
+      clamp(card.offsetLeft + dx, bounds.minX, bounds.maxX),
+      clamp(card.offsetTop + dy, bounds.minY, bounds.maxY)
+    );
+    drawConnections();
   });
 }
 
@@ -1323,20 +1456,33 @@ function clamp(value, minimum, maximum) {
 
 function selectNode(node) {
   if (activeNodeId === node.id) {
-    if (expandedNodeIds.has(node.id)) {
+    // 點同一張：desktop 切換展開／收合；mobile local 不用累積展開，僅保留 active。
+    if (isMobileBoard()) {
+      // mobile：維持 active，不擴張狀態（visibility 已由 active+connections 提供）。
+    } else if (expandedNodeIds.has(node.id)) {
       expandedNodeIds.delete(node.id);
     } else {
       expandedNodeIds.add(node.id);
       seedConnectedPositions(node);
     }
   } else {
+    // 切換 active：mobile 清掉舊展開以避免網絡無聲膨脹；desktop 保留累積探索。
+    if (isMobileBoard()) {
+      expandedNodeIds.clear();
+    }
     activeNodeId = node.id;
-    expandedNodeIds.add(node.id);
-    seedConnectedPositions(node);
+    if (!isMobileBoard()) {
+      expandedNodeIds.add(node.id);
+      seedConnectedPositions(node);
+    } else {
+      // mobile 仍需為一階關聯產生位置，但 expanded 不作為 visibility 來源。
+      seedConnectedPositions(node);
+    }
   }
 
-  renderBoard();
+  renderBoard({ preserve: false });
   populateSidebar(node);
+  setSidebarSheetState("expanded");
 }
 
 function drawConnections() {
@@ -1406,11 +1552,16 @@ function updateCardVisuals() {
     if (!card) return;
 
     card.classList.remove("active-card", "related-card", "dimmed-card");
-    card.setAttribute("aria-expanded", String(expandedNodeIds.has(node.id)));
+    const isExpanded = expandedNodeIds.has(node.id);
+    const selectAction = card.querySelector(".card-select-action");
+    if (selectAction) {
+      selectAction.setAttribute("aria-expanded", String(isExpanded));
+      selectAction.setAttribute("aria-pressed", String(activeNodeId === node.id));
+    }
 
     const status = card.querySelector(".expand-status");
     if (status) {
-      status.textContent = expandedNodeIds.has(node.id) ? "− 收合" : "+ 展開";
+      status.textContent = isExpanded ? "− 收合" : "+ 展開";
     }
 
     if (!activeNodeId) return;
@@ -1456,6 +1607,7 @@ function populateSidebar(node) {
   description.className = "detail-desc";
   description.textContent = node.description;
 
+  // P0-F：關聯資訊提到大型插畫之前，讓手機第一個 viewport 先看到摘要、關聯數與前幾個 CTA。
   const relations = document.createElement("section");
   relations.className = "relations-section";
 
@@ -1477,15 +1629,28 @@ function populateSidebar(node) {
     relationsList.appendChild(createRelationButton(relatedNode));
   });
 
+  // P0-E/F：「回到板面」緊接關聯 CTA，收合 bottom sheet 但保留 active card。
+  const backToBoard = document.createElement("button");
+  backToBoard.type = "button";
+  backToBoard.className = "back-to-board-btn";
+  backToBoard.textContent = "回到板面";
+  backToBoard.setAttribute("aria-label", "收合卷宗回到證據板");
+  backToBoard.addEventListener("click", () => {
+    setSidebarSheetState("collapsed");
+    // 保留 activeNodeId；只收合 sheet，讓使用者回到板面操作。
+  });
+
+  const art = createDetailArt(node.id);
+
   classification.append(type, recordId);
   descriptionBlock.append(descriptionLabel, description);
   relationsHeading.append(relationsTitle, relationsCount);
-  relations.append(relationsHeading, relationsList);
+  relations.append(relationsHeading, relationsList, backToBoard);
 
-  const art = createDetailArt(node.id);
-  detail.append(classification, name);
+  // P0-F：DOM 順序 = 分類 → 名稱 → 摘要 → 關聯數/CTA → 回到板面 → 完整情報 → 大圖。
+  // 手機首屏先看到下一步；大型 hero 移到最後（CSS 另外限高）。
+  detail.append(classification, name, descriptionBlock, relations, createDetailsDisclosure(node));
   if (art) detail.append(art);
-  detail.append(descriptionBlock, createDetailsDisclosure(node), relations);
   sidebarContent.replaceChildren(detail);
 }
 
@@ -1855,20 +2020,70 @@ function handleRelationClick(nodeId) {
   const node = getNode(nodeId);
   if (!node) return;
 
+  // P0-C：relation 跨 filter 時先更新 filter state，不產生中間 render。
   if (currentFilter !== "all" && currentFilter !== node.type) {
     setActiveFilter("all");
   }
 
+  // mobile local 切換 active 清掉舊展開；desktop 保留既有累積行為。
+  if (isMobileBoard()) {
+    expandedNodeIds.clear();
+  } else {
+    expandedNodeIds.add(node.id);
+  }
   activeNodeId = node.id;
-  expandedNodeIds.add(node.id);
   seedConnectedPositions(node);
-  renderBoard();
+  renderBoard({ preserve: false });
   populateSidebar(node);
+  setSidebarSheetState("expanded");
 
   window.requestAnimationFrame(() => {
     const card = document.getElementById(`node-${node.id}`);
-    card?.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
-    card?.focus({ preventScroll: true });
+    if (!card) return;
+    scrollCardIntoView(card);
+    const selectAction = card.querySelector(".card-select-action");
+    selectAction?.focus({ preventScroll: true });
+  });
+}
+
+// P0-D：只調整 boardWrapper 內部 scroll，不用未限制的 scrollIntoView（會牽動 body）。
+function scrollCardIntoView(card) {
+  const cardRect = card.getBoundingClientRect();
+  const wrapperRect = boardWrapper.getBoundingClientRect();
+  const cardCenterX = cardRect.left + cardRect.width / 2;
+  const cardCenterY = cardRect.top + cardRect.height / 2;
+  const wrapperCenterX = wrapperRect.left + wrapperRect.width / 2;
+  const wrapperCenterY = wrapperRect.top + wrapperRect.height / 2;
+  boardWrapper.scrollBy({
+    left: cardCenterX - wrapperCenterX,
+    top: cardCenterY - wrapperCenterY,
+    behavior: "smooth"
+  });
+}
+
+// P0-E：bottom sheet 狀態。peek=未選取、expanded=已選取、collapsed=回到板面。
+function setSidebarSheetState(state) {
+  const sidebar = document.getElementById("case-file-sidebar");
+  if (!sidebar) return;
+  // 桌面不使用 sheet 行為；僅在 <=620 套用視覺。狀態仍記錄供 CSS 判讀。
+  sidebar.dataset.sheetState = state;
+  const handle = sidebar.querySelector(".sheet-handle");
+  if (handle) {
+    handle.setAttribute("aria-expanded", String(state === "expanded"));
+  }
+}
+
+function setupSheetHandle() {
+  const sidebar = document.getElementById("case-file-sidebar");
+  const handle = sidebar?.querySelector(".sheet-handle");
+  if (!handle) return;
+  // 點 handle：collapsed ↔ expanded 切換（保留 active）。
+  handle.addEventListener("click", () => {
+    if (sidebar.dataset.sheetState === "expanded") {
+      setSidebarSheetState("collapsed");
+    } else {
+      setSidebarSheetState(activeNodeId ? "expanded" : "peek");
+    }
   });
 }
 
@@ -1889,6 +2104,7 @@ function resetSidebar() {
 
   empty.append(crosshair, title, body);
   sidebarContent.replaceChildren(empty);
+  setSidebarSheetState("peek");
 }
 
 function setupFilters() {
@@ -1919,15 +2135,74 @@ function setActiveFilter(filter) {
 
 function setupResetLayout() {
   document.getElementById("reset-layout-btn").addEventListener("click", () => {
-    positions = clonePositions(INITIAL_POSITIONS);
+    // P0-G：重置整個視圖——清除兩個 layout 的位置、自動配置、選取、展開、篩選、view mode。
+    positionsByLayout.desktop = clonePositions(INITIAL_POSITIONS);
+    positionsByLayout.mobile = clonePositions(MOBILE_INITIAL_POSITIONS);
+    autoPositionedByLayout.desktop.clear();
+    autoPositionedByLayout.mobile.clear();
+    positions = positionsByLayout[activeLayoutKey];
+    autoPositionedNodeIds = autoPositionedByLayout[activeLayoutKey];
     expandedNodeIds.clear();
-    autoPositionedNodeIds.clear();
     activeNodeId = null;
     setActiveFilter("all");
+    viewMode = "local";
+    document.querySelectorAll("[data-view-mode]").forEach((button) => {
+      const isActive = button.dataset.viewMode === "local";
+      button.classList.toggle("active", isActive);
+      button.setAttribute("aria-pressed", String(isActive));
+    });
     resetSidebar();
-    renderBoard();
-    boardWrapper.scrollTo({ left: 70, top: 24, behavior: "smooth" });
+    renderBoard({ preserve: false });
+    boardWrapper.scrollTo(getInitialBoardScroll());
   });
+}
+
+// P0-D：拖曳 pinboard 空白處平移 board，不動卡片座標。
+// 只接受 pinboard 背景／SVG 為來源，排除卡片與 HUD/controls。
+function setupBoardPan() {
+  let pointerId = null;
+  let startX = 0;
+  let startY = 0;
+  let startScrollLeft = 0;
+  let startScrollTop = 0;
+  let panning = false;
+
+  pinboard.addEventListener("pointerdown", (event) => {
+    if (event.target.closest(".node-card") || event.target.closest(".board-hud")) return;
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+
+    pointerId = event.pointerId;
+    startX = event.clientX;
+    startY = event.clientY;
+    startScrollLeft = boardWrapper.scrollLeft;
+    startScrollTop = boardWrapper.scrollTop;
+    panning = false;
+    pinboard.setPointerCapture(pointerId);
+  });
+
+  pinboard.addEventListener("pointermove", (event) => {
+    if (event.pointerId !== pointerId) return;
+    const deltaX = event.clientX - startX;
+    const deltaY = event.clientY - startY;
+    if (!panning && Math.hypot(deltaX, deltaY) < 5) return;
+    panning = true;
+    pinboard.classList.add("panning");
+    boardWrapper.scrollLeft = startScrollLeft - deltaX;
+    boardWrapper.scrollTop = startScrollTop - deltaY;
+  });
+
+  const endPan = (event) => {
+    if (event.pointerId !== pointerId) return;
+    if (pinboard.hasPointerCapture(pointerId)) {
+      pinboard.releasePointerCapture(pointerId);
+    }
+    pinboard.classList.remove("panning");
+    pointerId = null;
+    panning = false;
+  };
+
+  pinboard.addEventListener("pointerup", endPan);
+  pinboard.addEventListener("pointercancel", endPan);
 }
 
 function updateRecordClock() {

@@ -49,8 +49,10 @@
           <button class="filter-btn" type="button" data-filter="event" aria-pressed="false">事件</button>
           <button class="filter-btn" type="button" data-filter="item" aria-pressed="false">物品</button>
         </div>
-        <button id="reset-layout-btn" class="util-btn" type="button">
-          <span aria-hidden="true">↺</span> 重置佈局
+        <button id="reset-layout-btn" class="util-btn" type="button"
+          title="重置整個視圖：清除卡片位置、選取、展開、篩選與視野模式"
+          aria-label="重置整個視圖：清除卡片位置、選取、展開、篩選與視野模式">
+          <span aria-hidden="true">↺</span> 重置整個視圖
         </button>
       </div>
     </header>
@@ -67,7 +69,7 @@
       </div>
 
       <div class="board-hud" aria-live="polite">
-        <div class="hud-readouts">
+        <div class="hud-status hud-readouts">
           <div class="hud-metric">
             <span class="hud-label">目前視野</span>
             <strong id="visible-count">5</strong><span class="hud-unit"> / 19 線索</span>
@@ -77,11 +79,15 @@
             <strong id="hits">—</strong>
           </div>
         </div>
-        <p>拖曳卡片移動 · 點擊展開或收合關聯</p>
+        <div class="hud-view-controls" role="group" aria-label="視野模式">
+          <button class="view-mode-btn active" type="button" data-view-mode="local" aria-pressed="true">局部網絡</button>
+          <button class="view-mode-btn" type="button" data-view-mode="all" aria-pressed="false">全圖</button>
+        </div>
+        <p class="hud-instruction">點卡片查看卷宗 · 拖曳空白處探索板面</p>
       </div>
     </main>
 
-    <aside id="case-file-sidebar" class="sidebar" aria-label="偵探卷宗側欄">
+    <aside id="case-file-sidebar" class="sidebar" aria-label="偵探卷宗側欄" data-sheet-state="peek">
       <div class="sidebar-header">
         <div>
           <span class="sidebar-eyebrow">DETECTIVE CASE FILE</span>
@@ -89,6 +95,10 @@
         </div>
         <span class="security-level">機密</span>
       </div>
+
+      <button class="sheet-handle" type="button" aria-expanded="false" aria-label="展開或收合卷宗面板">
+        <span aria-hidden="true"></span>
+      </button>
 
       <div id="sidebar-content" class="sidebar-content">
         <div class="empty-state">
