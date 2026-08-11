@@ -524,21 +524,39 @@ button:focus-visible,
 .card-art::after {
   content: "";
   position: absolute;
+  z-index: 1;
   inset: 0;
-  background: linear-gradient(180deg, transparent 55%, rgba(0, 0, 0, 0.28));
+  background:
+    linear-gradient(90deg, rgba(13, 12, 12, 0.22), transparent 38%),
+    linear-gradient(180deg, rgba(8, 9, 11, 0.08) 35%, rgba(8, 9, 11, 0.58));
+  box-shadow: inset 0 0 22px rgba(8, 9, 11, 0.42);
 }
 
+.card-art img,
 .card-art svg {
   display: block;
   width: 100%;
   height: 100%;
   transform: scale(1.08);
-  transition: transform 180ms ease;
+  transition: filter 180ms ease, transform 180ms ease;
 }
 
+.card-art img {
+  object-fit: cover;
+  object-position: var(--art-position, 50% 50%);
+  filter: grayscale(0.78) sepia(0.18) saturate(0.72) contrast(1.2) brightness(0.7);
+}
+
+.node-card:hover .card-art img,
+.node-card.active-card .card-art img,
 .node-card:hover .card-art svg,
 .node-card.active-card .card-art svg {
   transform: scale(1.13);
+}
+
+.node-card:hover .card-art img,
+.node-card.active-card .card-art img {
+  filter: grayscale(0.62) sepia(0.16) saturate(0.8) contrast(1.22) brightness(0.78);
 }
 
 .card-title {
@@ -879,10 +897,46 @@ button:focus-visible,
   background: var(--detail-color);
 }
 
+.detail-art::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(9, 10, 12, 0.3), transparent 36%),
+    linear-gradient(180deg, transparent 52%, rgba(9, 10, 12, 0.62));
+  box-shadow: inset 0 0 46px rgba(9, 10, 12, 0.46);
+}
+
+.detail-art img,
 .detail-art svg {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+.detail-art img {
+  object-fit: cover;
+  object-position: var(--art-position, 50% 50%);
+  filter: grayscale(0.58) sepia(0.14) saturate(0.8) contrast(1.16) brightness(0.78);
+}
+
+.art-load-failed {
+  display: grid;
+  place-items: center;
+  background: #1b1c21;
+}
+
+.art-load-failed::after {
+  content: "LOCAL IMAGE UNAVAILABLE";
+  position: static;
+  color: #77736c;
+  background: none;
+  box-shadow: none;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
 }
 
 .relations-section {

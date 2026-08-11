@@ -860,6 +860,31 @@ const cardArt = {
   i2: '<svg viewBox="0 0 240 200" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g stroke="#d8d4cc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M90 96h60v36c0 16-12 28-30 28s-30-12-30-28z"/><path d="M90 96l8-40h44l8 40"/><path d="M98 56h44"/><path d="M120 96v64"/></g><g stroke="#9a958b" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M104 120h32"/><path d="M104 132h32"/><path d="M120 96v-40"/></g></svg>'
 };
 
+// ── 提案用官方角色／事件圖片 ──────────────────────────────────────
+// 圖片皆保存為本地資產，來源與版權狀態記錄於 assets/card-art/SOURCES.json。
+// 原創 Noir SVG 保留為離線載入失敗時的 fallback。
+const cardImages = {
+  p1: { src: "./assets/card-art/p1.jpg", alt: "烏丸蓮耶的角色形象", position: "50% 50%" },
+  p2: { src: "./assets/card-art/p2.png", alt: "若狹留美的角色形象", position: "50% 0%" },
+  p3: { src: "./assets/card-art/p3.png", alt: "黑田兵衛的角色形象", position: "50% 0%" },
+  p4: { src: "./assets/card-art/p4.png", alt: "江戶川柯南的角色形象", position: "50% 0%" },
+  p5: { src: "./assets/card-art/p5.jpg", alt: "灰原哀的角色形象", position: "50% 50%" },
+  p6: { src: "./assets/card-art/p6.jpg", alt: "宮野厚司與宮野艾蓮娜同框的動畫畫面", position: "43% 50%" },
+  p7: { src: "./assets/card-art/p7.png", alt: "宮野明美的角色形象", position: "50% 0%" },
+  p8: { src: "./assets/card-art/p8.png", alt: "赤井秀一的角色形象", position: "50% 0%" },
+  p9: { src: "./assets/card-art/p9.png", alt: "安室透的角色形象", position: "50% 0%" },
+  p10: { src: "./assets/card-art/p10.png", alt: "諸伏景光以蘇格蘭身分登場的角色形象", position: "50% 0%" },
+  p11: { src: "./assets/card-art/p11.jpg", alt: "羽田浩司命案相關的角色特寫", position: "55% 45%" },
+  c1: { src: "./assets/card-art/c1.png", alt: "脇田兼則的角色形象", position: "50% 0%" },
+  c2: { src: "./assets/card-art/c2.png", alt: "琴酒的角色形象", position: "50% 0%" },
+  c3: { src: "./assets/card-art/c3.jpg", alt: "伏特加的角色特寫", position: "50% 50%" },
+  c4: { src: "./assets/card-art/c4.jpg", alt: "苦艾酒的角色特寫", position: "50% 50%" },
+  e1: { src: "./assets/card-art/e1.png", alt: "宮野艾蓮娜的角色形象，代表組織藥物研究計畫", position: "50% 0%" },
+  e2: { src: "./assets/card-art/e2.jpg", alt: "羽田浩司命案調查相關的動畫畫面", position: "50% 50%" },
+  i1: { src: "./assets/card-art/i1.jpg", alt: "APTX 4869 藥物的動畫畫面", position: "50% 50%" },
+  i2: { src: "./assets/card-art/i2.jpg", alt: "刻有角行字樣的將棋棋子", position: "50% 60%" }
+};
+
 function getDetails(nodeId) {
   const stored = evidenceDetails[nodeId];
   if (!stored) return emptyDetails();
@@ -1464,15 +1489,52 @@ function populateSidebar(node) {
   sidebarContent.replaceChildren(detail);
 }
 
-// ── 卡片插畫：證據卡縮圖與側欄詳情共用同一份離線 SVG ────────────────
+// ── 卡片插畫：本地提案圖片，載入失敗時退回原創 Noir SVG ──────────────
 function createArtFigure(nodeId, className) {
-  const svg = cardArt[nodeId];
-  if (!svg) return null;
+  const imageAsset = cardImages[nodeId];
+  const fallbackSvg = cardArt[nodeId];
+  if (!imageAsset && !fallbackSvg) return null;
 
+  const isCardThumbnail = className === "card-art";
   const figure = document.createElement("figure");
   figure.className = className;
-  figure.setAttribute("aria-hidden", "true");
-  figure.innerHTML = svg;
+
+  if (isCardThumbnail) {
+    figure.setAttribute("aria-hidden", "true");
+  }
+
+  const renderFallback = () => {
+    if (!fallbackSvg) {
+      figure.classList.add("art-load-failed");
+      figure.replaceChildren();
+      return;
+    }
+
+    figure.classList.add("art-fallback");
+    figure.replaceChildren();
+    figure.innerHTML = fallbackSvg;
+
+    if (!isCardThumbnail && imageAsset?.alt) {
+      figure.setAttribute("role", "img");
+      figure.setAttribute("aria-label", imageAsset.alt);
+    }
+  };
+
+  if (!imageAsset) {
+    renderFallback();
+    return figure;
+  }
+
+  figure.style.setProperty("--art-position", imageAsset.position || "50% 50%");
+
+  const image = document.createElement("img");
+  image.src = imageAsset.src;
+  image.alt = isCardThumbnail ? "" : imageAsset.alt;
+  image.decoding = "async";
+  if (isCardThumbnail) image.loading = "lazy";
+  image.addEventListener("error", renderFallback, { once: true });
+  figure.appendChild(image);
+
   return figure;
 }
 
