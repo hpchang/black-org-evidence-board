@@ -928,13 +928,13 @@ const INITIAL_POSITIONS = {
 };
 
 // P0-A：mobile compact 起始座標。pinboard 仍是固定 1800×1240 邏輯畫布，
-// 但行動版初始把 5 張核心卡收攏到 ~360×520 內，390×844 首屏即可完整看見。
+// 5 張核心卡依 154px × 190px 最小尺寸排成不重疊的 compact 網絡。
 const MOBILE_INITIAL_POSITIONS = {
-  p1: { x: 120, y: 70 },
-  c1: { x: 26, y: 250 },
-  c2: { x: 214, y: 250 },
-  p4: { x: 120, y: 430 },
-  i1: { x: 120, y: 320 }
+  p1: { x: 120, y: 32 },
+  c1: { x: 26, y: 244 },
+  c2: { x: 214, y: 244 },
+  i1: { x: 26, y: 456 },
+  p4: { x: 214, y: 456 }
 };
 
 const MOBILE_BREAKPOINT_QUERY = "(max-width: 620px)";
@@ -1011,6 +1011,13 @@ function areConnected(firstId, secondId) {
     first && second &&
     (first.connections.includes(secondId) || second.connections.includes(firstId))
   );
+}
+
+function isNodeExpanded(nodeId) {
+  if (isMobileBoard() && viewMode === "local") {
+    return activeNodeId === nodeId;
+  }
+  return expandedNodeIds.has(nodeId);
 }
 
 function getVisibleNodeIds() {
@@ -1144,6 +1151,15 @@ function handleLayoutSwitchIfNeeded() {
   positions = positionsByLayout[activeLayoutKey];
   autoPositionedNodeIds = autoPositionedByLayout[activeLayoutKey];
   setViewMode(viewMode, { skipRender: true });
+
+  if (nextKey === "desktop" && viewMode === "local" && activeNodeId) {
+    const activeNode = getNode(activeNodeId);
+    if (activeNode) {
+      expandedNodeIds.add(activeNode.id);
+      seedConnectedPositions(activeNode);
+    }
+  }
+
   renderBoard({ preserve: false });
 }
 
@@ -1311,7 +1327,7 @@ function createNodeCard(node) {
 
   const expandStatus = document.createElement("span");
   expandStatus.className = "expand-status";
-  expandStatus.textContent = expandedNodeIds.has(node.id) ? "− 收合" : "+ 展開";
+  expandStatus.textContent = isNodeExpanded(node.id) ? "− 收合" : "+ 展開";
 
   const art = createArtFigure(node.id, "card-art");
 
@@ -1330,7 +1346,7 @@ function createNodeCard(node) {
   selectAction.setAttribute("aria-label", `${node.name}，${TYPE_LABELS[node.type]}，${node.connections.length} 個直接關聯，點擊開啟卷宗`);
   selectAction.setAttribute("aria-pressed", String(activeNodeId === node.id));
   selectAction.setAttribute("aria-controls", "case-file-sidebar");
-  selectAction.setAttribute("aria-expanded", String(expandedNodeIds.has(node.id)));
+  selectAction.setAttribute("aria-expanded", String(isNodeExpanded(node.id)));
   // P1-E：pointer 選取不搶焦點（靠 live region 公告）；鍵盤 Enter/Space 選取後
   // 將焦點移到 record name，方便輔助科技朗讀卷宗起點。攔截鍵盤事件避免重複觸發 click。
   selectAction.addEventListener("click", () => selectNode(node));
@@ -1487,7 +1503,7 @@ function selectNode(node) {
     // 點同一張：desktop 切換展開／收合；mobile local 不用累積展開，僅保留 active。
     if (isMobileBoard()) {
       // mobile：維持 active，不擴張狀態（visibility 已由 active+connections 提供）。
-    } else if (expandedNodeIds.has(node.id)) {
+    } else if (isNodeExpanded(node.id)) {
       expandedNodeIds.delete(node.id);
     } else {
       expandedNodeIds.add(node.id);
@@ -1581,7 +1597,7 @@ function updateCardVisuals() {
     if (!card) return;
 
     card.classList.remove("active-card", "related-card", "dimmed-card");
-    const isExpanded = expandedNodeIds.has(node.id);
+    const isExpanded = isNodeExpanded(node.id);
     const selectAction = card.querySelector(".card-select-action");
     if (selectAction) {
       selectAction.setAttribute("aria-expanded", String(isExpanded));
@@ -1689,6 +1705,7 @@ function populateSidebar(node) {
   if (art) detail.append(art);
   detail.append(createDetailsDisclosure(node));
   sidebarContent.replaceChildren(detail);
+  sidebarContent.scrollTop = 0;
 
   // P1-E：鍵盤選取後焦點移到 record name，方便輔助科技朗讀卷宗起點。
   // （pointer 選取不搶焦點；此處只在明確鍵盤流程呼叫，見 selectNode 呼叫端。）
@@ -2152,6 +2169,7 @@ function resetSidebar() {
 
   empty.append(crosshair, title, body);
   sidebarContent.replaceChildren(empty);
+  sidebarContent.scrollTop = 0;
   setSidebarSheetState("peek");
 }
 

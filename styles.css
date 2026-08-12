@@ -1602,10 +1602,6 @@ button:focus-visible,
     grid-row: 1 / -1;
   }
 
-  .sidebar-footer {
-    display: none;
-  }
-
   .board-hud {
     width: min(440px, calc(100vw - 32px));
   }
@@ -1708,9 +1704,9 @@ button:focus-visible,
     font-size: 0.62rem;
   }
 
-  /* P0-A：pinboard 維持固定邏輯畫布，靠 board-wrapper 內部 scroll；不縮放。 */
+  /* P0-A：pinboard 維持固定邏輯畫布，靠 board-wrapper 內部 scroll；不可 flex-shrink。 */
   .pinboard {
-    flex: 1 1 auto;
+    flex: 0 0 auto;
     min-height: 0;
   }
 
@@ -1728,7 +1724,7 @@ button:focus-visible,
     grid-column: 1;
     grid-row: 3;
     display: grid;
-    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
     min-height: 0;
     max-height: 100%;
     border-top: 1px solid var(--rule);
@@ -1739,11 +1735,11 @@ button:focus-visible,
   }
 
   .sidebar[data-sheet-state="peek"] {
-    max-height: 92px;
+    max-height: 124px;
   }
 
   .sidebar[data-sheet-state="collapsed"] {
-    max-height: 120px;
+    max-height: 152px;
   }
 
   .sidebar[data-sheet-state="expanded"] {

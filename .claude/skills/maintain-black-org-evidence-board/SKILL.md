@@ -146,6 +146,20 @@ UI 或互動變更時，依影響路徑實測：
 - `file://` 離線開啟
 - 必要時以本地 HTTP server 檢查瀏覽器行為
 
+## 響應式 UI 與狀態維護經驗
+
+這個專案的 responsive layout 不只是 CSS 排版，而是 CSS 尺寸、JavaScript 座標 map、visibility state、ARIA 與 scroll state 共同形成的契約。修改其中一層時要同步檢查其餘各層。
+
+- `.pinboard` 是固定 `1800×1240` 邏輯畫布。若 mobile `.board-wrapper` 改成 flex column，`.pinboard` 必須維持不可收縮（例如 `flex: 0 0 auto`）；否則 `clientHeight` 會縮成 viewport 剩餘高度，座標 clamp、SVG 與內部 scroll range 會一起失真。
+- 手機初始座標必須以實際卡片 geometry 驗證，不可只看 `x/y` 數字。以目前 `154px` 寬、`190px` 最小高度為基準，計算每對矩形是否相交；核心 seed 不屬於 `autoPositionedNodeIds`，不能期待 overlap resolver 修復。
+- 跨 breakpoint 不只切換 `positionsByLayout` 別名，也要重建該 layout 的 state invariant。mobile local 以 `active + 一階關聯` 顯示、desktop local 以 `core + expanded + active` 顯示，因此 mobile→desktop 時需將 active node 恢復為 expanded 並在 desktop map seed 關聯位置。
+- `aria-expanded` 應描述使用者看到／控制的 semantic state，不一定等於內部集合。mobile local 雖不累積 `expandedNodeIds`，active card 的 dossier 與一階網絡已展開；應以共用 helper 同步卡片文案和 ARIA。
+- 動態 replacement 的 scroll state 不會自動回到頂端。`sidebarContent.replaceChildren(...)` 後要明確重設 `scrollTop = 0`，避免新卷宗沿用舊卷宗的深層位置。
+- 元件移動後要重新檢查所有 parent responsive rules。計數器從 HUD 移到 `.sidebar-footer` 後，若舊 breakpoint 還有 `.sidebar-footer { display: none; }`，即使 RPC 成功與 `hidden=false` 也不會顯示；mobile grid 也需為恢復的 footer 配置明確 row。
+- 每個 breakpoint 至少測「邊界值」與「剛跨過邊界」：`880/879px`、`620/619px`，另以 `390×844` 檢查手機首屏。特別測 resize 前後的 active node、rendered relations、scroll offset、ARIA、footer/counter 與 logical canvas 高度。
+- 沒有 Playwright dependency 時，可使用已安裝 Chrome 的 headless mode + Chrome DevTools Protocol 做臨時驗證；仍要實際互動並檢查 screenshot、DOM geometry、runtime exceptions，而不是只確認頁面能載入。不要使用 `--no-sandbox`。
+- `file://` 要分別驗證 split `index.html` 與 generated standalone；standalone 應沒有 `styles.css`、`script.js` 或本地 card-art runtime dependency。
+
 ## 交付前檢查
 
 - 說明修改了哪些權威 source 與生成檔。
