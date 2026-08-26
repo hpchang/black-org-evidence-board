@@ -160,6 +160,53 @@ UI 或互動變更時，依影響路徑實測：
 - 沒有 Playwright dependency 時，可使用已安裝 Chrome 的 headless mode + Chrome DevTools Protocol 做臨時驗證；仍要實際互動並檢查 screenshot、DOM geometry、runtime exceptions，而不是只確認頁面能載入。不要使用 `--no-sandbox`。
 - `file://` 要分別驗證 split `index.html` 與 generated standalone；standalone 應沒有 `styles.css`、`script.js` 或本地 card-art runtime dependency。
 
+## 部署到 GitHub Pages
+
+本專案沿用 `/Users/hpchang/Documents/claude/MyProjects/GITHUB_PAGES_DEPLOYMENT_STANDARD.md` 的通用靜態部署標準：GitHub Pages classic branch deployment，source = `main` / `/`，帳號層級 custom domain `www.hpchang.com`，project repo 不加 CNAME、不建 `gh-pages` 分支、不建 Actions workflow。正式網址為 `https://www.hpchang.com/black-org-evidence-board/`。部署 = 把 source 推到 `main`，Pages 自動重建。
+
+### 部署前檢查
+
+- `node --check script.js`
+- 兩份 JSON 的 ID / connection validation（見上方「驗證」）。
+- standalone freshness：先備份 `black-org-evidence-board.html`，跑 `python3 tools/build_standalone.py`，`diff` 確認無 stale。若 source 有改過卻沒重建，部署前一定要重建。
+- SEO 與路徑：`index.html` 的 canonical / og:url / og:image / twitter:image 用 `https://www.hpchang.com/black-org-evidence-board/...` 絕對網址；站內資源（`styles.css`、`script.js`、`./favicon/...`、`./assets/...`）必須是相對路徑，不可出現 `/assets/...` 這種從網域根起算的路徑，否則在 `/<slug>/` 子路徑會 404。
+
+### 部署
+
+工作分支先 fast-forward 進 `main` 再 push（`main` 通常可乾淨 fast-forward）：
+
+```bash
+git checkout main
+git merge --ff-only <工作分支>
+git push origin main
+```
+
+若工作分支已不需要，部署後 `git branch -d <工作分支>` 清理本地；遠端若無此分支就不必另外刪除。
+
+### 部署後驗證
+
+```bash
+# Pages source 仍為 main / /，且觀察 build 狀態
+gh api repos/hpchang/black-org-evidence-board/pages --jq '{status, source:.source, https_enforced}'
+
+# 輪詢最新 build 直到 built（building 時每 ~5s 重查，通常 1-2 分鐘）
+gh api repos/hpchang/black-org-evidence-board/pages/builds --jq '.[0] | .status+" "+.commit'
+
+# 正式頁 HTTP 200
+curl -s -o /dev/null -w "%{http_code}\n" -L https://www.hpchang.com/black-org-evidence-board/
+
+# 確認 title / canonical / og:url / og:image
+curl -s -L https://www.hpchang.com/black-org-evidence-board/ | grep -oiE '<title>[^<]*</title>|rel="canonical"[^>]*|og:url"[^>]*|og:image"[^>]*'
+
+# 首頁引用的 css/js/json/favicon/og-image/card-art 逐一 curl，全 200
+```
+
+### 注意
+
+- Pages API 的 `https_enforced` 可能為 `false`；GitHub 仍會自動跳 HTTPS 且憑證已 approved，但若要強制 HTTPS 需在 repo Settings → Pages 勾 Enforce HTTPS（部署時可順便詢問使用者）。
+- Pages build 即使 API 顯示 timeout，仍需直接 `curl` 正式頁確認是否已更新。
+- `supabase/counter.sql` 是否已套用於共享 Supabase 專案，repo 無法證實；計數器 fail-silent，不影響部署驗證。
+
 ## 交付前檢查
 
 - 說明修改了哪些權威 source 與生成檔。
