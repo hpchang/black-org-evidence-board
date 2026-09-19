@@ -963,8 +963,7 @@ let currentFilter = "all";
 let viewMode = "local"; // P0-C：local | all
 const expandedNodeIds = new Set();
 const CARD_EDGE_MARGIN = 18;
-const COUNTER_URL = "https://eaawlrtrxwyurcfnekat.supabase.co";
-const COUNTER_PUBLISHABLE_KEY = "sb_publishable_zS96EY5Uddhaq06hjt04sQ_E8WarUjc";
+const COUNTER_BASE = "https://views-counter.views-counter-worker.workers.dev";
 const COUNTER_SLUG = "black-org-evidence-board";
 const COUNTER_STORAGE_KEY = `hits-counted:${COUNTER_SLUG}`;
 const COUNTER_TIMEOUT_MS = 8000;
@@ -1075,22 +1074,16 @@ function initCounter() {
   if (!line || !output || !window.fetch || !window.AbortController) return;
 
   const seen = safeSessionGet(COUNTER_STORAGE_KEY) === "1";
-  const rpcName = seen ? "read_hits" : "bump_hits";
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), COUNTER_TIMEOUT_MS);
 
-  window.fetch(`${COUNTER_URL}/rest/v1/rpc/${rpcName}`, {
-    method: "POST",
-    signal: controller.signal,
-    headers: {
-      apikey: COUNTER_PUBLISHABLE_KEY,
-      Authorization: `Bearer ${COUNTER_PUBLISHABLE_KEY}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ page_slug: COUNTER_SLUG })
+  window.fetch(`${COUNTER_BASE}/${encodeURIComponent(COUNTER_SLUG)}`, {
+    method: seen ? "GET" : "POST",
+    signal: controller.signal
   })
     .then((response) => response.ok ? response.json() : Promise.reject(response.status))
-    .then((count) => {
+    .then((data) => {
+      const count = data ? data.count : undefined;
       if (typeof count !== "number" || !Number.isFinite(count)) return;
       output.textContent = count.toLocaleString("zh-TW");
       line.hidden = false;

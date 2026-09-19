@@ -31,7 +31,7 @@
    python3 tools/build_standalone.py。
 5. 不新增 framework、bundler、套件、CDN、外部字型、runtime evidence fetch。
 6. 不修改 19 筆證據內容、不新增人物或關係，除非另有明確指示。
-7. 保留 file://、Pointer/keyboard interaction、filter、relation navigation、details disclosure、reset 與 Supabase fail-silent 行為。
+7. 保留 file://、Pointer/keyboard interaction、filter、relation navigation、details disclosure、reset 與計數器 fail-silent 行為。
 8. 每個 phase 必須完成 handover 指定的 browser/manual acceptance matrix；測試未通過不得宣稱完成。
 9. 不自動 commit 或 push，除非使用者明確要求。
 
@@ -76,7 +76,7 @@ Noir 證據板的視覺不是問題；問題是目前手機首屏、CTA、手勢
 - 點擊、拖曳、板面平移、bottom sheet 與卷宗滾動不互相誤觸。
 - 直接關聯在手機第一個卷宗 viewport 內可達。
 - 鍵盤、ARIA、焦點、live region、reduced-motion、forced-colors 通過。
-- `file://`、離線、Supabase timeout／失敗下核心功能正常。
+- `file://`、離線、Worker timeout／失敗下核心功能正常。
 - Standalone 由 split source 重建成功。
 - JavaScript、資料與 connection target 驗證通過。
 
@@ -117,7 +117,7 @@ python3 tools/build_standalone.py
 - 外部字型
 - Runtime external image dependency
 - Runtime evidence data fetch
-- Service-role key、資料庫密碼或管理員憑證
+- 資料庫密碼、管理員憑證或任何 secret
 
 ## 2.3 資料不變量
 
@@ -132,12 +132,12 @@ python3 tools/build_standalone.py
 
 三份資料比較要按 ID map，不要用頂層陣列順序；`p11` 在兩份 JSON 中位置不同不是資料缺漏。
 
-## 2.4 Supabase counter
+## 2.4 Counter
 
 - 可以保留。
 - 它是 fail-silent online enhancement，不是核心案件資料。
-- 離線、timeout 或 RPC 失敗不得影響 board、sidebar、filter、keyboard 或 layout。
-- 不得把 repo 中存在 `supabase/counter.sql` 描述成 migration 已部署。
+- 離線、timeout 或請求失敗不得影響 board、sidebar、filter、keyboard 或 layout。
+- 不得宣稱 Worker 計數器已部署；Worker 程式碼不在本 repo 內。
 
 ---
 
@@ -981,8 +981,8 @@ Anchors：
 1. `file://` 開啟 split source。
 2. `file://` 開啟 standalone。
 3. 完全離線。
-4. Supabase timeout。
-5. RPC error。
+4. Worker timeout。
+5. 請求失敗。
 6. Counter success。
 7. Local image error → SVG fallback。
 
@@ -1141,7 +1141,7 @@ git status --short
 - 不要讓 counter success 改變 HUD 高度。
 - 不要刪除 SVG fallback。
 - 不要自行新增人物、證據或關係。
-- 不要宣稱 Supabase migration 已部署。
+- 不要宣稱 Worker 計數器已部署。
 - 不要在 browser 未實測時宣稱 UI 100 分。
 
 ## 要做

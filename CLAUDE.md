@@ -63,9 +63,9 @@ There is no single-test command or test suite. For a targeted regression check, 
 - `styles.css` owns the entire noir visual system, fixed 1800×1240 evidence canvas, card/category treatments, SVG thread states, sidebar, accessibility states, and responsive layouts at 1120px, 880px, and 620px.
 - `script.js` contains both the embedded evidence database and all application behavior. Keeping data embedded is intentional: fetching `data.json` would break direct `file://` use because of browser CORS restrictions.
 - `data.json` is the standalone/API copy of the evidence records. `black-org-evidence-data.json` is the same data under its deployment filename.
-- `black-org-evidence-board.html` is a generated, self-contained distribution file with `styles.css`, `script.js`, and the favicon inlined. Treat the split source files as authoritative; do not make standalone-only edits. Regenerate it with `python3 tools/build_standalone.py`.
+- `black-org-evidence-board.html` is a generated, self-contained distribution file with `styles.css`, `script.js`, and the favicon inlined — the embedded counter included. Treat the split source files as authoritative; do not make standalone-only edits, and in particular do not hand-edit the counter there. Regenerate it with `python3 tools/build_standalone.py`.
 - `assets/og/` stores the Wikimedia-derived 1200×630 social image, its retained source, and attribution. Rebuild it with `swift tools/generate_og.swift`; keep the metadata image URL absolute.
-- `supabase/counter.sql` provisions the fail-silent `ARCHIVE ACCESS` counter. The browser publishable key is public by design; database safety depends on RLS, fixed RPC permissions, and the slug allowlist.
+- The fail-silent `ARCHIVE ACCESS` counter lives in `script.js` and calls our own Cloudflare Worker at `https://views-counter.views-counter-worker.workers.dev/<slug>` (slug `black-org-evidence-board`). `GET` reads `{"count":N}` without incrementing; `POST` increments and returns `{"count":N}`. There is no key of any kind. Which slugs exist is decided by the Worker's own allowlist, not by anything in this repository. See `VIEWS_COUNTER_STANDARD.md` for the full standard.
 
 ## State and rendering model
 

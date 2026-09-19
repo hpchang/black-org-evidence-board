@@ -4,11 +4,11 @@
 
 ## 正式部署
 
-以下為目前記錄的公開部署資訊；repository 本身無法證明外部站點目前在線或 Supabase migration 已套用。
+以下為目前記錄的公開部署資訊；repository 本身無法證明外部站點目前在線或計數器 Worker 已部署。
 
 - 網址：<https://www.hpchang.com/black-org-evidence-board/>
 - Open Graph 圖：`assets/og/black-org-evidence-board-og.png`（1200×630）
-- Supabase 計數 slug：`black-org-evidence-board`
+- 計數器 Worker slug：`black-org-evidence-board`
 
 ## 本地使用
 
@@ -19,7 +19,7 @@
 - `script.js`
 - `data.json`
 
-直接雙擊 `index.html` 即可使用。資料已內嵌於 `script.js`，因此不需要啟動本機伺服器，也不會遇到 `file://` 讀取 JSON 的 CORS 限制。瀏覽計數器是線上增強功能；無網路、Supabase 未設定或請求逾時時會靜默隱藏，不影響證據板離線操作。
+直接雙擊 `index.html` 即可使用。資料已內嵌於 `script.js`，因此不需要啟動本機伺服器，也不會遇到 `file://` 讀取 JSON 的 CORS 限制。瀏覽計數器是線上增強功能；無網路、Worker 未部署或請求逾時時會靜默隱藏，不影響證據板離線操作。
 
 ## 資料檔
 
@@ -69,11 +69,11 @@ python3 tools/build_standalone.py
 
 社群 metadata 使用正式站上的絕對 HTTPS 圖片網址，避免分享爬蟲無法解析相對路徑。
 
-## Supabase 瀏覽計數器
+## 瀏覽計數器（Cloudflare Worker）
 
-證據板 HUD 會在取得有效數字後顯示 `ARCHIVE ACCESS`。同一瀏覽階段第一次載入呼叫 `bump_hits`，重新整理則呼叫 `read_hits`，避免同一個分頁階段重複累加；請求 8 秒逾時或失敗時不顯示。
+證據板 HUD 會在取得有效數字後顯示 `ARCHIVE ACCESS`。同一瀏覽階段第一次載入以 `POST` 累加，重新整理則以 `GET` 讀取，避免同一個分頁階段重複累加；請求 8 秒逾時或失敗時不顯示。
 
-資料庫 migration 與安全模型說明位於 [`supabase/`](supabase/README.md)。`supabase/counter.sql` 是已備妥的 migration 檔；共享 Supabase 專案是否已實際套用，需於外部專案驗證，repository 內容無法證明。若尚未套用、網路不可用或請求逾時，計數器會靜默隱藏，證據板核心功能仍可離線運作。
+計數器呼叫本站自有的 Cloudflare Worker；沒有金鑰、沒有 RLS、沒有 SQL migration，可用的 slug 由 Worker 自身的白名單決定，Worker 程式碼不在本 repo 內。完整標準見 `VIEWS_COUNTER_STANDARD.md`。Worker 是否已部署無法由 repository 內容證明；未部署、網路不可用或請求逾時時，計數器會靜默隱藏，證據板核心功能仍可離線運作。
 
 ## 第二層詳細情報
 
@@ -155,4 +155,4 @@ for fn in ["data.json", "black-org-evidence-data.json"]:
 PY
 ```
 
-再以本地 HTTP 確認頁面與 `assets/og/black-org-evidence-board-og.png` 回傳 200，並檢查正式頁的 canonical、Open Graph、Twitter metadata 與 Supabase 計數器。直接以 `file://` 開啟來源版及單檔版時，也須確認拖曳、篩選、卷宗導航與重設功能不受網路失敗影響。
+再以本地 HTTP 確認頁面與 `assets/og/black-org-evidence-board-og.png` 回傳 200，並檢查正式頁的 canonical、Open Graph、Twitter metadata 與瀏覽計數器。直接以 `file://` 開啟來源版及單檔版時，也須確認拖曳、篩選、卷宗導航與重設功能不受網路失敗影響。

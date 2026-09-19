@@ -30,7 +30,6 @@ black-org-evidence-board.html  內嵌 CSS＋JS＋favicon 的單檔產生版（�
 tools/build_standalone.py     由 split source 重建單檔版
 tools/generate_og.swift      重建 1200×630 Open Graph 圖
 assets/og/                    OG 圖、來源照片與授權
-supabase/counter.sql          ARCHIVE ACCESS 計數器 migration
 .claude/skills/maintain-black-org-evidence-board/SKILL.md  專案維護流程
 ```
 
@@ -52,7 +51,7 @@ supabase/counter.sql          ARCHIVE ACCESS 計數器 migration
 12. 第二層詳細情報：側欄內就地展開，含身分、別名、組織、時間線、人物關係、相關物品、已確認／未確認情報與來源連結。
 13. 詳細情報的 `targetId` 關聯 chip 與「直接關聯線索」共用同一跳轉。
 14. 19 筆線索均配置本地 proposal image（主要）與自行繪製、離線內嵌的原創 Noir SVG（`cardArt`，載入失敗 fallback）。
-15. Supabase `ARCHIVE ACCESS` 瀏覽計數器為 fail-silent 線上增強；離線、逾時或 RPC 失敗時證據板核心功能仍正常。
+15. Cloudflare Worker `ARCHIVE ACCESS` 瀏覽計數器為 fail-silent 線上增強；離線、逾時或請求失敗時證據板核心功能仍正常。
 
 ## 四、目前資料狀態
 
@@ -203,12 +202,11 @@ Amanda Hughes（阿曼達·休斯）
 
 `APTX 4869（i1）↔ 烏丸蓮耶（p1）` 的雙向連線已存在，不再列為待補。
 
-## 八、Supabase 與部署狀態
+## 八、計數器與部署狀態
 
-- repo 內有 `supabase/counter.sql` 與 `supabase/README.md`，但 repository 內容無法證明共享 Supabase 專案已實際套用 migration。
-- 沒有外部查詢或部署紀錄時，狀態應標示為未驗證；只能說 migration 檔已備妥，不可宣稱資料庫部署完成。
-- `ARCHIVE ACCESS` 計數器是 optional、fail-silent 的線上增強；離線、逾時或 RPC 失敗不得影響證據板核心功能。
-- 公開網址與 slug 見 `README.md`；該資訊為記錄用途，不代表 repository 可證明外部站點目前在線或 migration 已套用。
+- repo 內容無法證明計數器 Worker 已部署；Worker 程式碼不在本 repo 內，因此只能描述前端已接好端點，不可宣稱後端已上線。
+- `ARCHIVE ACCESS` 計數器是 optional、fail-silent 的線上增強；離線、逾時或請求失敗不得影響證據板核心功能。
+- 公開網址與 slug 見 `README.md`；該資訊為記錄用途，不代表 repository 可證明外部站點目前在線或 Worker 已部署。
 
 ## 九、驗證
 
@@ -252,7 +250,7 @@ UI 或互動變更時，依影響路徑實測：卡片拖曳、Enter／Space 選
 2. 不新增 runtime data fetch 或破壞 `file://` 的依賴。
 3. 不自行建立未確認的人物卡片或關係。
 4. 不把推測寫成已確認情報，也不大量複製第三方原文。
-5. 不把 `supabase/counter.sql` 存在 repo 解讀為 migration 已部署。
+5. 不從 repo 內容推論計數器 Worker 已部署；Worker 程式碼不在本 repo 內。
 6. 不把 JSON 頂層陣列順序差異誤判為資料內容不同。
 7. 不刪除 `emptyDetails()`、`DETAILS_PLACEHOLDER` 或 `getDetails()` 的 fallback 行為。
 8. 不自動 commit 或 push；只有使用者明確要求時才進行。

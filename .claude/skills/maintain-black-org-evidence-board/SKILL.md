@@ -53,9 +53,9 @@ description: 維護黑衣組織證據板的證據資料、詳細情報、關係�
 
 - 保持 dependency-free、offline-first，且 `index.html` 可直接由 `file://` 開啟。
 - 不把證據資料改成 runtime `fetch`，不新增 framework、bundler、CDN、外部字型或執行時外部圖片。
-- Supabase 計數器只是可失敗的線上增強功能；逾時、離線或 RPC 失敗時，證據板核心功能仍須正常。
-- 不把 publishable key 當秘密；絕不提交 service-role key、資料庫密碼或管理員憑證。
-- repo 內存在 `supabase/counter.sql` 不代表共享 Supabase 專案已套用 migration。沒有外部驗證時只描述為「migration 檔已備妥」。
+- Cloudflare Worker 計數器只是可失敗的線上增強功能；逾時、離線或請求失敗時，證據板核心功能仍須正常。
+- 計數器沒有金鑰；絕不提交任何憑證或 secret。
+- repo 內容無法證明計數器 Worker 已部署；Worker 程式碼不在本 repo 內，因此只能描述為前端已接好端點，不可宣稱後端已上線。
 
 ## 維護 Noir SVG 插畫
 
@@ -86,7 +86,7 @@ description: 維護黑衣組織證據板的證據資料、詳細情報、關係�
 - 不新增 runtime data fetch 或破壞 `file://` 的依賴。
 - 不自行建立未確認的人物卡片或關係。
 - 不把推測寫成已確認情報，也不大量複製第三方原文。
-- 不把 SQL 檔存在 repo 解讀為 migration 已部署。
+- 不從 repo 內容推論計數器 Worker 已部署；Worker 程式碼不在本 repo 內。
 - 不把 JSON 頂層陣列順序差異誤判為資料內容不同。
 
 ## 重建生成檔
@@ -155,7 +155,7 @@ UI 或互動變更時，依影響路徑實測：
 - 跨 breakpoint 不只切換 `positionsByLayout` 別名，也要重建該 layout 的 state invariant。mobile local 以 `active + 一階關聯` 顯示、desktop local 以 `core + expanded + active` 顯示，因此 mobile→desktop 時需將 active node 恢復為 expanded 並在 desktop map seed 關聯位置。
 - `aria-expanded` 應描述使用者看到／控制的 semantic state，不一定等於內部集合。mobile local 雖不累積 `expandedNodeIds`，active card 的 dossier 與一階網絡已展開；應以共用 helper 同步卡片文案和 ARIA。
 - 動態 replacement 的 scroll state 不會自動回到頂端。`sidebarContent.replaceChildren(...)` 後要明確重設 `scrollTop = 0`，避免新卷宗沿用舊卷宗的深層位置。
-- 元件移動後要重新檢查所有 parent responsive rules。計數器從 HUD 移到 `.sidebar-footer` 後，若舊 breakpoint 還有 `.sidebar-footer { display: none; }`，即使 RPC 成功與 `hidden=false` 也不會顯示；mobile grid 也需為恢復的 footer 配置明確 row。
+- 元件移動後要重新檢查所有 parent responsive rules。計數器從 HUD 移到 `.sidebar-footer` 後，若舊 breakpoint 還有 `.sidebar-footer { display: none; }`，即使請求成功與 `hidden=false` 也不會顯示；mobile grid 也需為恢復的 footer 配置明確 row。
 - 每個 breakpoint 至少測「邊界值」與「剛跨過邊界」：`880/879px`、`620/619px`，另以 `390×844` 檢查手機首屏。特別測 resize 前後的 active node、rendered relations、scroll offset、ARIA、footer/counter 與 logical canvas 高度。
 - 沒有 Playwright dependency 時，可使用已安裝 Chrome 的 headless mode + Chrome DevTools Protocol 做臨時驗證；仍要實際互動並檢查 screenshot、DOM geometry、runtime exceptions，而不是只確認頁面能載入。不要使用 `--no-sandbox`。
 - `file://` 要分別驗證 split `index.html` 與 generated standalone；standalone 應沒有 `styles.css`、`script.js` 或本地 card-art runtime dependency。
@@ -205,11 +205,11 @@ curl -s -L https://www.hpchang.com/black-org-evidence-board/ | grep -oiE '<title
 
 - Pages API 的 `https_enforced` 可能為 `false`；GitHub 仍會自動跳 HTTPS 且憑證已 approved，但若要強制 HTTPS 需在 repo Settings → Pages 勾 Enforce HTTPS（部署時可順便詢問使用者）。
 - Pages build 即使 API 顯示 timeout，仍需直接 `curl` 正式頁確認是否已更新。
-- `supabase/counter.sql` 是否已套用於共享 Supabase 專案，repo 無法證實；計數器 fail-silent，不影響部署驗證。
+- 計數器 Worker 是否已部署，repo 無法證實（Worker 程式碼不在本 repo 內）；計數器 fail-silent，不影響部署驗證。
 
 ## 交付前檢查
 
 - 說明修改了哪些權威 source 與生成檔。
 - 說明三份資料是否同步、採用何種 ID-based 比較。
-- 如有未執行的 browser、Supabase 或部署驗證，明確列出，不推測成功。
+- 有未執行的 browser、計數器或部署驗證，明確列出，不推測成功。
 - 不自動 commit 或 push；只有使用者明確要求時才進行。
